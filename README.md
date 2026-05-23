@@ -1,9 +1,7 @@
-# bun-spt
+# mnt-rms
 
-`bun-spt` is a Bun and TypeScript template repository for scripts.
-
-The repository ships a minimal CLI entrypoint with repository-owned checks,
-tests, and GitHub Actions validation.
+`mnt-rms` is a minimal repository to verify Remotion locally with one
+composition and one rendered output video.
 
 ## Setup
 
@@ -17,13 +15,17 @@ bun install
 bun run start
 bun run check
 bun run test
+bun run video:compositions
+bun run video:studio
+bun run video:render
 ```
 
-`bun run fix` applies Biome formatting and safe lint fixes.
+`bun run video:render` writes `output/manatee-float.mp4`.
 
 ## Runtime
 
-The script entrypoint is `src/index.ts`.
-Tests live under `tests/`.
-GitHub Actions validation runs the same `check` and `test` tasks as local
-development.
+- Script entrypoint: `src/index.ts`
+- Remotion entrypoint: `src/studio/root.tsx`
+- Project definition: `src/video/manatee-float.tsx`
+- Asset source for staging: `src/assets/manatee/`
+- Render output: `output/`

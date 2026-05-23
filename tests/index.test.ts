@@ -11,7 +11,7 @@ function runScript(): number {
   return command.exitCode ?? 1;
 }
 
-describe('bun script template', () => {
+describe('mnt-rms entrypoint', () => {
   test('runs without errors', () => {
     expect(runScript()).toBe(0);
   });
