@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import path from 'node:path';
 
 function runScript(): number {
-  const command = Bun.spawnSync(['bun', 'src/index.ts'], {
+  const command = Bun.spawnSync(['bun', 'src/cli.ts'], {
     cwd: path.join(import.meta.dir, '..'),
     stdout: 'pipe',
     stderr: 'pipe',

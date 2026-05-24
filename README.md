@@ -1,7 +1,6 @@
 # mnt-rms
 
-`mnt-rms` is a minimal repository to verify Remotion locally with one
-composition and one rendered output video.
+`mnt-rms` is a Bun + TypeScript repository for multi-project Remotion rendering.
 
 ## Setup
 
@@ -20,12 +19,28 @@ bun run video:studio
 bun run video:render
 ```
 
-`bun run video:render` writes `output/manatee-float.mp4`.
+`bun run video:render` writes `output/<project-id>/<output-file-name>`.
 
-## Runtime
+## CLI
 
-- Script entrypoint: `src/index.ts`
-- Remotion entrypoint: `src/studio/root.tsx`
-- Project definition: `src/video/manatee-float.tsx`
-- Asset source for staging: `src/assets/manatee/`
-- Render output: `output/`
+```bash
+bun run start <action> <project-path>
+bun run start help
+```
+
+- `action`: `compositions`, `studio`, `render`
+- `project-path`: a project directory containing `project.ts`, or a direct `project.ts` path
+
+Example:
+
+```bash
+bun run start render projects/manatee-float
+```
+
+## Project Structure
+
+- Project definitions and media: `projects/<project-id>/`
+- Caption assets: `src/captions/`
+- Render composition and metadata logic: `src/video/`
+- Project loading and staging: `src/projects/`
+- CLI command execution: `src/commands/` and `src/cli.ts`
