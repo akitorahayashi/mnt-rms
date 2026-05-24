@@ -19,11 +19,12 @@ export async function loadProject(
   const absoluteRequestedPath = path.resolve(requestedProjectPath);
   const projectFilePath = await resolveProjectFilePath(absoluteRequestedPath);
   const importedModule = await importProjectModule(projectFilePath);
-  const definition = validateProject(importedModule.default);
+  const projectRootPath = path.dirname(projectFilePath);
+  const definition = validateProject(importedModule.default, projectRootPath);
 
   return {
     definition,
-    directoryPath: path.dirname(projectFilePath),
+    directoryPath: projectRootPath,
     filePath: projectFilePath,
   };
 }
@@ -77,12 +78,12 @@ async function importProjectModule(
   return importedModule;
 }
 
-function validateProject(value: unknown): Project {
+function validateProject(value: unknown, projectRootPath: string): Project {
   const project = requireRecord(value, 'project.default');
   const canvas = validateCanvas(project.canvas);
-  const clips = validateClips(project.clips);
+  const clips = validateClips(project.clips, projectRootPath);
   const captions = validateCaptions(project.captions);
-  const audio = validateAudio(project.audio);
+  const audio = validateAudio(project.audio, projectRootPath);
 
   return {
     audio,
@@ -93,8 +94,8 @@ function validateProject(value: unknown): Project {
     canvas,
     captions,
     clips,
-    id: requireNonEmptyString(project.id, 'project.id'),
-    outputFileName: requireNonEmptyString(
+    id: requirePathSegment(project.id, 'project.id'),
+    outputFileName: requirePathSegment(
       project.outputFileName,
       'project.outputFileName',
     ),
@@ -115,7 +116,10 @@ function validateCanvas(value: unknown): Project['canvas'] {
   };
 }
 
-function validateClips(value: unknown): Project['clips'] {
+function validateClips(
+  value: unknown,
+  projectRootPath: string,
+): Project['clips'] {
   if (!Array.isArray(value)) {
     throw new Error('project.clips must be an array');
   }
@@ -124,10 +128,16 @@ function validateClips(value: unknown): Project['clips'] {
     throw new Error('project.clips must contain at least one clip');
   }
 
-  return value.map((clipValue, index) => validateClip(clipValue, index));
+  return value.map((clipValue, index) =>
+    validateClip(clipValue, index, projectRootPath),
+  );
 }
 
-function validateClip(value: unknown, index: number): Project['clips'][number] {
+function validateClip(
+  value: unknown,
+  index: number,
+  projectRootPath: string,
+): Project['clips'][number] {
   const clip = requireRecord(value, `project.clips[${index}]`);
   const fit = clip.fit;
 
@@ -138,9 +148,10 @@ function validateClip(value: unknown, index: number): Project['clips'][number] {
   return {
     fit,
     id: requireNonEmptyString(clip.id, `project.clips[${index}].id`),
-    mediaPath: requireNonEmptyString(
+    mediaPath: requireProjectRelativePath(
       clip.mediaPath,
       `project.clips[${index}].mediaPath`,
+      projectRootPath,
     ),
     trimAfterSeconds: requireOptionalNonNegativeNumber(
       clip.trimAfterSeconds,
@@ -150,7 +161,7 @@ function validateClip(value: unknown, index: number): Project['clips'][number] {
       clip.trimBeforeSeconds,
       `project.clips[${index}].trimBeforeSeconds`,
     ),
-    volume: requireOptionalNonNegativeNumber(
+    volume: requireNonNegativeNumber(
       clip.volume,
       `project.clips[${index}].volume`,
     ),
@@ -188,12 +199,12 @@ function validateCaption(
     );
   }
 
-  const motionName = requireOptionalString(
+  const motionName = requireNonEmptyString(
     cue.motionName,
     `project.captions[${index}].motionName`,
   );
 
-  if (motionName !== undefined && !knownMotionNames.has(motionName)) {
+  if (!knownMotionNames.has(motionName)) {
     throw new Error(
       `Unknown caption motionName "${motionName}". Available motions: ${[...knownMotionNames].join(', ')}`,
     );
@@ -215,7 +226,10 @@ function validateCaption(
   };
 }
 
-function validateAudio(value: unknown): Project['audio'] {
+function validateAudio(
+  value: unknown,
+  projectRootPath: string,
+): Project['audio'] {
   if (!Array.isArray(value)) {
     throw new Error('project.audio must be an array');
   }
@@ -224,12 +238,15 @@ function validateAudio(value: unknown): Project['audio'] {
     throw new Error('project.audio must contain at least one audio clip');
   }
 
-  return value.map((audioValue, index) => validateAudioClip(audioValue, index));
+  return value.map((audioValue, index) =>
+    validateAudioClip(audioValue, index, projectRootPath),
+  );
 }
 
 function validateAudioClip(
   value: unknown,
   index: number,
+  projectRootPath: string,
 ): Project['audio'][number] {
   const audio = requireRecord(value, `project.audio[${index}]`);
 
@@ -244,9 +261,10 @@ function validateAudioClip(
     ),
     id: requireNonEmptyString(audio.id, `project.audio[${index}].id`),
     loop: requireOptionalBoolean(audio.loop, `project.audio[${index}].loop`),
-    mediaPath: requireNonEmptyString(
+    mediaPath: requireProjectRelativePath(
       audio.mediaPath,
       `project.audio[${index}].mediaPath`,
+      projectRootPath,
     ),
     trimAfterSeconds: requireOptionalNonNegativeNumber(
       audio.trimAfterSeconds,
@@ -277,21 +295,6 @@ function requireRecord(
 function requireNonEmptyString(value: unknown, fieldName: string): string {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`${fieldName} must be a non-empty string`);
-  }
-
-  return value;
-}
-
-function requireOptionalString(
-  value: unknown,
-  fieldName: string,
-): string | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (typeof value !== 'string' || value.trim() === '') {
-    throw new Error(`${fieldName} must be a non-empty string when provided`);
   }
 
   return value;
@@ -337,4 +340,56 @@ function requireOptionalBoolean(
   }
 
   return value;
+}
+
+function requirePathSegment(value: unknown, fieldName: string): string {
+  const segment = requireNonEmptyString(value, fieldName);
+
+  if (
+    path.isAbsolute(segment) ||
+    segment === '.' ||
+    segment === '..' ||
+    segment.includes('/') ||
+    segment.includes('\\')
+  ) {
+    throw new Error(`${fieldName} must be a single safe path segment`);
+  }
+
+  return segment;
+}
+
+function requireProjectRelativePath(
+  value: unknown,
+  fieldName: string,
+  projectRootPath: string,
+): string {
+  const candidate = requireNonEmptyString(value, fieldName);
+
+  if (path.isAbsolute(candidate)) {
+    throw new Error(`${fieldName} must be relative to the project directory`);
+  }
+
+  const normalizedPath = path.normalize(candidate);
+
+  if (
+    normalizedPath === '..' ||
+    normalizedPath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(normalizedPath)
+  ) {
+    throw new Error(`${fieldName} must stay inside the project directory`);
+  }
+
+  const resolvedPath = path.resolve(projectRootPath, normalizedPath);
+  const relativePath = path.relative(projectRootPath, resolvedPath);
+
+  if (
+    relativePath === '' ||
+    relativePath === '..' ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
+    throw new Error(`${fieldName} must stay inside the project directory`);
+  }
+
+  return normalizedPath;
 }

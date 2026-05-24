@@ -37,7 +37,7 @@ export function Composition({
               muted={clip.volume === 0}
               startFrom={toFrameOffset(clip.trimBeforeSeconds ?? 0, fps)}
               src={requireClipSrc(clip, id)}
-              volume={clip.volume ?? 1}
+              volume={clip.volume}
               style={{
                 height: '100%',
                 objectFit: clip.fit,

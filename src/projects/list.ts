@@ -14,9 +14,20 @@ export async function listProjectDirectories(): Promise<string[]> {
 
     const projectDirectoryPath = path.join(projectsRootPath, entry.name);
     const projectFilePath = path.join(projectDirectoryPath, 'project.ts');
-    const isProjectDirectory = await access(projectFilePath, constants.R_OK)
-      .then(() => true)
-      .catch(() => false);
+    let isProjectDirectory = false;
+
+    try {
+      await access(projectFilePath, constants.R_OK);
+      isProjectDirectory = true;
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        !('code' in error) ||
+        error.code !== 'ENOENT'
+      ) {
+        throw error;
+      }
+    }
 
     if (isProjectDirectory) {
       projectDirectories.push(

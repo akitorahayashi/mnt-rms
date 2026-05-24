@@ -15,7 +15,7 @@ async function runFromCli(): Promise<void> {
 
   if (projectPath === undefined) {
     throw new Error(
-      'Missing <project-path> argument. Run `bun run start help` for usage.',
+      'Missing <project-path> argument. Run `bun run rms help` for usage.',
     );
   }
 

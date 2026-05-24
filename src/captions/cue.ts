@@ -7,7 +7,7 @@ export type StyleName = keyof typeof styleCatalog;
 export interface Cue {
   durationSeconds: number;
   id: string;
-  motionName?: MotionName;
+  motionName: MotionName;
   startSeconds: number;
   styleName: StyleName;
   text: string;

@@ -6,7 +6,13 @@ import { styleCatalog } from './style';
 export function CaptionLayer({ cue }: { cue: Cue }) {
   const frame = useCurrentFrame();
   const style = styleCatalog[cue.styleName];
-  const motion = motionCatalog[cue.motionName ?? 'none'](frame);
+  const motionFactory = motionCatalog[cue.motionName];
+
+  if (motionFactory === undefined) {
+    throw new Error(`Unknown caption motionName: ${cue.motionName}`);
+  }
+
+  const motion = motionFactory(frame);
 
   return (
     <div

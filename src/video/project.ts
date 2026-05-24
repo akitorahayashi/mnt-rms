@@ -29,7 +29,7 @@ export interface Project extends Record<string, unknown> {
     src?: string;
     trimAfterSeconds?: number;
     trimBeforeSeconds?: number;
-    volume?: number;
+    volume: number;
   }>;
   id: string;
   outputFileName: string;
