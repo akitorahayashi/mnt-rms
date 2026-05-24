@@ -1,7 +1,7 @@
 import { copyFile, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { toAssetPath } from '../video/asset-path';
-import type { LoadedSpec } from './load';
+import type { LoadedProject } from './load';
 
 export interface StagedProjectAssets {
   outputPath: string;
@@ -9,7 +9,7 @@ export interface StagedProjectAssets {
 }
 
 export async function stageProjectAssets(
-  loadedProject: LoadedSpec,
+  loadedProject: LoadedProject,
 ): Promise<StagedProjectAssets> {
   const { definition, directoryPath } = loadedProject;
   const publicDirPath = path.join('.tmp', 'remotion-public', definition.id);

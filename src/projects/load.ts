@@ -2,29 +2,24 @@ import { constants } from 'node:fs';
 import { access, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import type { Cue } from '../captions/cue';
 import { motionCatalog } from '../captions/motion';
 import { styleCatalog } from '../captions/style';
-import type {
-  AudioTrackDefinition,
-  CaptionCue,
-  MediaClipDefinition,
-  Spec,
-  VideoCanvas,
-} from '../video/definition';
+import type { Project } from '../video/project';
 
-export interface LoadedSpec {
-  definition: Spec;
+export interface LoadedProject {
+  definition: Project;
   directoryPath: string;
   filePath: string;
 }
 
-export async function loadSpec(
+export async function loadProject(
   requestedProjectPath: string,
-): Promise<LoadedSpec> {
+): Promise<LoadedProject> {
   const absoluteRequestedPath = path.resolve(requestedProjectPath);
   const projectFilePath = await resolveProjectFilePath(absoluteRequestedPath);
   const importedModule = await importProjectModule(projectFilePath);
-  const definition = validateSpec(importedModule.default);
+  const definition = validateProject(importedModule.default);
 
   return {
     definition,
@@ -82,7 +77,7 @@ async function importProjectModule(
   return importedModule;
 }
 
-function validateSpec(value: unknown): Spec {
+function validateProject(value: unknown): Project {
   const project = requireRecord(value, 'project.default');
   const canvas = validateCanvas(project.canvas);
   const clips = validateClips(project.clips);
@@ -106,7 +101,7 @@ function validateSpec(value: unknown): Spec {
   };
 }
 
-function validateCanvas(value: unknown): VideoCanvas {
+function validateCanvas(value: unknown): Project['canvas'] {
   const canvas = requireRecord(value, 'project.canvas');
 
   return {
@@ -120,7 +115,7 @@ function validateCanvas(value: unknown): VideoCanvas {
   };
 }
 
-function validateClips(value: unknown): MediaClipDefinition[] {
+function validateClips(value: unknown): Project['clips'] {
   if (!Array.isArray(value)) {
     throw new Error('project.clips must be an array');
   }
@@ -132,7 +127,7 @@ function validateClips(value: unknown): MediaClipDefinition[] {
   return value.map((clipValue, index) => validateClip(clipValue, index));
 }
 
-function validateClip(value: unknown, index: number): MediaClipDefinition {
+function validateClip(value: unknown, index: number): Project['clips'][number] {
   const clip = requireRecord(value, `project.clips[${index}]`);
   const fit = clip.fit;
 
@@ -162,7 +157,7 @@ function validateClip(value: unknown, index: number): MediaClipDefinition {
   };
 }
 
-function validateCaptions(value: unknown): CaptionCue[] {
+function validateCaptions(value: unknown): Cue[] {
   if (!Array.isArray(value)) {
     throw new Error('project.captions must be an array');
   }
@@ -180,7 +175,7 @@ function validateCaption(
   index: number,
   knownStyleNames: Set<string>,
   knownMotionNames: Set<string>,
-): CaptionCue {
+): Cue {
   const cue = requireRecord(value, `project.captions[${index}]`);
   const styleName = requireNonEmptyString(
     cue.styleName,
@@ -211,13 +206,13 @@ function validateCaption(
     ),
     from: requireNonNegativeNumber(cue.from, `project.captions[${index}].from`),
     id: requireNonEmptyString(cue.id, `project.captions[${index}].id`),
-    motionName: motionName as CaptionCue['motionName'],
-    styleName: styleName as CaptionCue['styleName'],
+    motionName: motionName as Cue['motionName'],
+    styleName: styleName as Cue['styleName'],
     text: requireNonEmptyString(cue.text, `project.captions[${index}].text`),
   };
 }
 
-function validateAudio(value: unknown): AudioTrackDefinition {
+function validateAudio(value: unknown): Project['audio'] {
   const audio = requireRecord(value, 'project.audio');
 
   return {

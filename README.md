@@ -69,9 +69,9 @@ Required top-level fields:
 Minimal example:
 
 ```ts
-import type { Spec } from '../../src/video/definition';
+import type { Project } from '../../src/video/project';
 
-const project: Spec = {
+const project: Project = {
   id: 'sample',
   outputFileName: 'sample.mp4',
   backgroundColor: '#000000',

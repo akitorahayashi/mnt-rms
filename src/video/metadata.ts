@@ -1,10 +1,10 @@
 import { parseMedia } from '@remotion/media-parser';
 import type { CalculateMetadataFunction } from 'remotion';
-import type { ResolvedMediaClip, ResolvedSpec } from './definition';
+import type { Project } from './project';
 
-export const calculateMetadata: CalculateMetadataFunction<
-  ResolvedSpec
-> = async ({ props }) => {
+export const calculateMetadata: CalculateMetadataFunction<Project> = async ({
+  props,
+}) => {
   const clips = await Promise.all(
     props.clips.map((clip) =>
       resolveClipDuration(clip, props.canvas.fps, props.id),
@@ -36,16 +36,17 @@ export const calculateMetadata: CalculateMetadataFunction<
 };
 
 async function resolveClipDuration(
-  clip: ResolvedMediaClip,
+  clip: Project['clips'][number],
   fps: number,
   projectId: string,
-): Promise<ResolvedMediaClip> {
+): Promise<Project['clips'][number]> {
+  const clipSrc = requireClipSrc(clip, projectId);
   const { slowDurationInSeconds } = await parseMedia({
     acknowledgeRemotionLicense: true,
     fields: {
       slowDurationInSeconds: true,
     },
-    src: clip.src,
+    src: clipSrc,
   });
 
   const sourceDurationInFrames = Math.max(
@@ -79,7 +80,7 @@ async function resolveClipDuration(
 }
 
 export function requireClipDuration(
-  clip: ResolvedMediaClip,
+  clip: Project['clips'][number],
   projectId: string,
 ): number {
   if (clip.durationInFrames !== undefined) {
@@ -88,5 +89,18 @@ export function requireClipDuration(
 
   throw new Error(
     `Clip duration has not been resolved. project=${projectId}, clip=${clip.id}`,
+  );
+}
+
+function requireClipSrc(
+  clip: Project['clips'][number],
+  projectId: string,
+): string {
+  if (clip.src !== undefined) {
+    return clip.src;
+  }
+
+  throw new Error(
+    `Clip source path has not been resolved. project=${projectId}, clip=${clip.id}`,
   );
 }

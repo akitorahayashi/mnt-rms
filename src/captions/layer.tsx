@@ -1,9 +1,9 @@
 import { useCurrentFrame } from 'remotion';
-import type { CaptionCue } from '../video/definition';
+import type { Cue } from './cue';
 import { motionCatalog } from './motion';
 import { styleCatalog } from './style';
 
-export function CaptionLayer({ cue }: { cue: CaptionCue }) {
+export function CaptionLayer({ cue }: { cue: Cue }) {
   const frame = useCurrentFrame();
   const style = styleCatalog[cue.styleName];
   const motion = motionCatalog[cue.motionName ?? 'none'](frame);

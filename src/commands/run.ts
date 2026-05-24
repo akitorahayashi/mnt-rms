@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { loadSpec } from '../projects/load';
+import { loadProject } from '../projects/load';
 import { stageProjectAssets } from '../projects/stage';
 import { writeRootEntry } from './write-root-entry';
 
@@ -11,7 +11,7 @@ export interface VideoCommand {
 }
 
 export async function runVideoCommand(command: VideoCommand): Promise<void> {
-  const loadedProject = await loadSpec(command.projectPath);
+  const loadedProject = await loadProject(command.projectPath);
   const stagedAssets = await stageProjectAssets(loadedProject);
   const remotionRootEntry = await writeRootEntry({
     projectFilePath: loadedProject.filePath,

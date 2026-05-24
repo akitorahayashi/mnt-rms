@@ -1,6 +1,6 @@
-import type { Spec } from '../../src/video/definition';
+import type { Project } from '../../src/video/project';
 
-const project: Spec = {
+const project: Project = {
   audio: {
     mediaPath: 'media/music/おならエンジン.mp3',
     trimAfter: 2700,

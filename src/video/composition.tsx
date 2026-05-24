@@ -6,8 +6,8 @@ import {
   Series,
 } from 'remotion';
 import { CaptionLayer } from '../captions/layer';
-import type { ResolvedSpec } from './definition';
 import { requireClipDuration } from './metadata';
+import type { Project } from './project';
 
 export function Composition({
   audio,
@@ -15,7 +15,7 @@ export function Composition({
   captions,
   clips,
   id,
-}: ResolvedSpec) {
+}: Project) {
   return (
     <AbsoluteFill style={{ backgroundColor }}>
       <Series>
@@ -28,7 +28,7 @@ export function Composition({
               endAt={clip.trimAfterInFrames}
               muted={clip.volume === 0}
               startFrom={clip.trimBeforeInFrames}
-              src={clip.src}
+              src={requireClipSrc(clip, id)}
               volume={clip.volume ?? 1}
               style={{
                 height: '100%',
@@ -49,11 +49,34 @@ export function Composition({
         </Sequence>
       ))}
       <Html5Audio
-        src={audio.src}
+        src={requireAudioSrc(audio, id)}
         trimAfter={audio.trimAfter}
         trimBefore={audio.trimBefore}
         volume={audio.volume}
       />
     </AbsoluteFill>
+  );
+}
+
+function requireClipSrc(
+  clip: Project['clips'][number],
+  projectId: string,
+): string {
+  if (clip.src !== undefined) {
+    return clip.src;
+  }
+
+  throw new Error(
+    `Clip source path has not been resolved. project=${projectId}, clip=${clip.id}`,
+  );
+}
+
+function requireAudioSrc(audio: Project['audio'], projectId: string): string {
+  if (audio.src !== undefined) {
+    return audio.src;
+  }
+
+  throw new Error(
+    `Audio source path has not been resolved. project=${projectId}`,
   );
 }

@@ -53,11 +53,11 @@ function remotionRootSource(input: RemotionRootSourceInput): string {
 
   return `import { Composition, registerRoot } from 'remotion';
 import projectDefinition from '${projectImportPath}';
-import { buildRuntimeSpec } from '${runtimeProjectBuilderImportPath}';
+import { applyMediaSrc } from '${runtimeProjectBuilderImportPath}';
 import { Composition as ProjectComposition } from '${compositionImportPath}';
 import { calculateMetadata } from '${metadataImportPath}';
 
-const runtimeProject = buildRuntimeSpec(projectDefinition);
+const runtimeProject = applyMediaSrc(projectDefinition);
 
 function RemotionRoot() {
   return (

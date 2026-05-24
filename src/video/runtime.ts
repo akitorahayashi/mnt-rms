@@ -1,10 +1,10 @@
 import { staticFile } from 'remotion';
 import { toAssetPath } from './asset-path';
-import type { ResolvedSpec, Spec } from './definition';
+import type { Project } from './project';
 
-export function buildRuntimeSpec(definition: Spec): ResolvedSpec {
-  const clips = definition.clips.map((clip) => {
-    const publicPath = toAssetPath(definition.id, clip.mediaPath);
+export function applyMediaSrc(project: Project): Project {
+  const clips = project.clips.map((clip) => {
+    const publicPath = toAssetPath(project.id, clip.mediaPath);
 
     return {
       ...clip,
@@ -12,15 +12,12 @@ export function buildRuntimeSpec(definition: Spec): ResolvedSpec {
     };
   });
 
-  const audioPublicPath = toAssetPath(
-    definition.id,
-    definition.audio.mediaPath,
-  );
+  const audioPublicPath = toAssetPath(project.id, project.audio.mediaPath);
 
   return {
-    ...definition,
+    ...project,
     audio: {
-      ...definition.audio,
+      ...project.audio,
       src: staticFile(audioPublicPath),
     },
     clips,
