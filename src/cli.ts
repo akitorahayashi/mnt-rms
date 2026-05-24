@@ -38,13 +38,13 @@ async function printUsage(): Promise<void> {
 
   process.stdout.write('mnt-rms: Remotion rendering CLI\n');
   process.stdout.write('Usage:\n');
-  process.stdout.write('  bun run start <action> <project-path>\n');
-  process.stdout.write('  bun run start help\n');
+  process.stdout.write('  bun run rms <action> <project-path>\n');
+  process.stdout.write('  bun run rms help\n');
   process.stdout.write('Actions:\n');
   process.stdout.write('  compositions, studio, render\n');
   process.stdout.write(`Project paths:\n${projectList}\n`);
   process.stdout.write('Example:\n');
-  process.stdout.write('  bun run start render projects/manatee-float\n');
+  process.stdout.write('  bun run rms render projects/manatee-float\n');
 }
 
 runFromCli().catch((error: unknown) => {

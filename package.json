@@ -8,9 +8,7 @@
   "private": true,
   "scripts": {
     "start": "bun src/cli.ts help",
-    "video:compositions": "bun src/cli.ts compositions projects/manatee-float",
-    "video:render": "bun src/cli.ts render projects/manatee-float",
-    "video:studio": "bun src/cli.ts studio projects/manatee-float",
+    "rms": "bun src/cli.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "check": "biome check . && bun run typecheck",
