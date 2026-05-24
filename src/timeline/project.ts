@@ -1,5 +1,14 @@
 import type { Cue } from '../captions/cue';
 
+export type ClipTransition =
+  | {
+      kind: 'cut';
+    }
+  | {
+      durationSeconds: number;
+      kind: 'crossfade';
+    };
+
 export interface Project extends Record<string, unknown> {
   audio: Array<{
     durationSeconds: number;
@@ -26,7 +35,9 @@ export interface Project extends Record<string, unknown> {
     id: string;
     mediaPath: string;
     sourceFrameCount?: number;
+    startSeconds: number;
     src?: string;
+    transition?: ClipTransition;
     trimAfterSeconds?: number;
     trimBeforeSeconds?: number;
     volume: number;

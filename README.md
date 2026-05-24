@@ -7,7 +7,8 @@ The repository is organized into three layers:
 
 - `projects/`: per-project data and media (`project.ts`, `media/`)
 - `src/captions/`: reusable caption styles and motions
-- `src/video/`, `src/projects/`, `src/commands/`: rendering pipeline, project
+- `src/timeline/`, `src/composition/`, `src/projects/`, `src/commands/`:
+  timeline model and validation, Remotion composition runtime, project
   loading/staging, and CLI execution
 
 ## Setup
@@ -19,7 +20,7 @@ bun install
 ## Quick Start
 
 ```bash
-bun run start help
+bun run help
 bun run rms compositions projects/manatee-float
 bun run rms render projects/manatee-float
 ```
@@ -32,7 +33,7 @@ Render output is written to:
 
 ```bash
 bun run rms <action> <project-path>
-bun run start
+bun run help
 ```
 
 - `action`
@@ -69,7 +70,7 @@ Required top-level fields:
 Minimal example:
 
 ```ts
-import type { Project } from '../../src/video/project';
+import type { Project } from '../../src/timeline/project';
 
 const project: Project = {
   id: 'sample',
@@ -85,6 +86,18 @@ const project: Project = {
     {
       id: 'intro',
       mediaPath: 'media/intro.mp4',
+      startSeconds: 0,
+      fit: 'cover',
+      volume: 0,
+    },
+    {
+      id: 'follow-up',
+      mediaPath: 'media/follow-up.mp4',
+      startSeconds: 9,
+      transition: {
+        kind: 'crossfade',
+        durationSeconds: 0.6,
+      },
       fit: 'cover',
       volume: 0,
     },
@@ -123,6 +136,10 @@ Rules:
 - `styleName` and `motionName` must exist in `src/captions/`.
 - Time fields are expressed in seconds and may be decimals.
 - Seconds are rounded to the nearest frame using project `fps` during rendering.
+- Adjacent visual clips must not leave gaps.
+- Overlapping visual clips require `transition` on the incoming clip.
+- `transition.kind` supports `cut` and `crossfade`.
+- `crossfade.durationSeconds` must be positive and no larger than the overlap.
 
 ## Add A New Project
 

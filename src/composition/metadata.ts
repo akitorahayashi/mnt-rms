@@ -1,7 +1,8 @@
 import { parseMedia } from '@remotion/media-parser';
 import type { CalculateMetadataFunction } from 'remotion';
-import type { Project } from './project';
-import { toFrameCount, toFrameOffset } from './time';
+import type { Project } from '../timeline/project';
+import { toFrameCount, toFrameOffset } from '../timeline/time';
+import { validateTransitions } from '../timeline/transition';
 
 export const calculateMetadata: CalculateMetadataFunction<Project> = async ({
   props,
@@ -12,10 +13,14 @@ export const calculateMetadata: CalculateMetadataFunction<Project> = async ({
     ),
   );
 
-  const timelineDuration = clips.reduce(
-    (sum, clip) => sum + requireClipDuration(clip, props.id),
-    0,
-  );
+  validateTransitions(clips, props.canvas.fps, props.id);
+  const timelineDuration = clips.reduce((max, clip) => {
+    const clipEndFrame =
+      toFrameOffset(clip.startSeconds, props.canvas.fps) +
+      requireClipDuration(clip, props.id);
+
+    return Math.max(max, clipEndFrame);
+  }, 0);
   const maxDurationInFrames = toFrameCount(
     props.canvas.durationSeconds,
     props.canvas.fps,

@@ -1,14 +1,16 @@
 import {
   AbsoluteFill,
   Html5Audio,
+  interpolate,
   OffthreadVideo,
   Sequence,
-  Series,
+  useCurrentFrame,
 } from 'remotion';
 import { CaptionLayer } from '../captions/layer';
+import type { Project } from '../timeline/project';
+import { toFrameCount, toFrameOffset } from '../timeline/time';
+import { resolveTransition } from '../timeline/transition';
 import { requireClipDuration } from './metadata';
-import type { Project } from './project';
-import { toFrameCount, toFrameOffset } from './time';
 
 export function Composition({
   audio,
@@ -22,31 +24,20 @@ export function Composition({
 
   return (
     <AbsoluteFill style={{ backgroundColor }}>
-      <Series>
-        {clips.map((clip) => (
-          <Series.Sequence
-            key={clip.id}
-            durationInFrames={requireClipDuration(clip, id)}
-          >
-            <OffthreadVideo
-              endAt={
-                clip.trimAfterSeconds === undefined
-                  ? undefined
-                  : toFrameOffset(clip.trimAfterSeconds, fps)
-              }
-              muted={clip.volume === 0}
-              startFrom={toFrameOffset(clip.trimBeforeSeconds ?? 0, fps)}
-              src={requireClipSrc(clip, id)}
-              volume={clip.volume}
-              style={{
-                height: '100%',
-                objectFit: clip.fit,
-                width: '100%',
-              }}
-            />
-          </Series.Sequence>
-        ))}
-      </Series>
+      {clips.map((clip, index) => (
+        <Sequence
+          key={clip.id}
+          from={toFrameOffset(clip.startSeconds, fps)}
+          durationInFrames={requireClipDuration(clip, id)}
+        >
+          <ClipLayer
+            clip={clip}
+            transition={resolveTransition(clips, index, fps, id)}
+            projectId={id}
+            fps={fps}
+          />
+        </Sequence>
+      ))}
       {captions.map((cue) => (
         <Sequence
           key={cue.id}
@@ -76,6 +67,47 @@ export function Composition({
         </Sequence>
       ))}
     </AbsoluteFill>
+  );
+}
+
+function ClipLayer({
+  clip,
+  transition,
+  fps,
+  projectId,
+}: {
+  clip: Project['clips'][number];
+  transition: ReturnType<typeof resolveTransition>;
+  fps: number;
+  projectId: string;
+}) {
+  const frame = useCurrentFrame();
+  const opacity =
+    transition.kind === 'cut'
+      ? 1
+      : interpolate(frame, [0, transition.frameCount], [0, 1], {
+          extrapolateLeft: 'clamp',
+          extrapolateRight: 'clamp',
+        });
+
+  return (
+    <OffthreadVideo
+      endAt={
+        clip.trimAfterSeconds === undefined
+          ? undefined
+          : toFrameOffset(clip.trimAfterSeconds, fps)
+      }
+      muted={clip.volume === 0}
+      startFrom={toFrameOffset(clip.trimBeforeSeconds ?? 0, fps)}
+      src={requireClipSrc(clip, projectId)}
+      volume={clip.volume}
+      style={{
+        height: '100%',
+        objectFit: clip.fit,
+        opacity,
+        width: '100%',
+      }}
+    />
   );
 }
 
