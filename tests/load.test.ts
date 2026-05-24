@@ -55,6 +55,35 @@ describe('loadProject', () => {
       'project.captions[0].motionName must be a non-empty string',
     );
   });
+
+  test('rejects durationSeconds on cut transition', async () => {
+    const projectPath = await writeProjectFixture('cut-transition-duration', {
+      clips: [
+        {
+          fit: 'cover',
+          id: 'clip-1',
+          mediaPath: 'media/clip-1.mp4',
+          startSeconds: 0,
+          volume: 0,
+        },
+        {
+          fit: 'cover',
+          id: 'clip-2',
+          mediaPath: 'media/clip-2.mp4',
+          startSeconds: 1,
+          transition: {
+            durationSeconds: 0.4,
+            kind: 'cut',
+          },
+          volume: 0,
+        },
+      ],
+    });
+
+    await expect(loadProject(projectPath)).rejects.toThrow(
+      'project.clips[1].transition.durationSeconds is not allowed when kind is "cut"',
+    );
+  });
 });
 
 async function writeProjectFixture(

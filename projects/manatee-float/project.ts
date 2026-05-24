@@ -66,7 +66,11 @@ const project: Project = {
       fit: 'cover',
       id: 'slowly-rises-surface',
       mediaPath: 'media/pool/vertical/02_slowly_rises_surface_202605162110.mp4',
-      startSeconds: 6,
+      startSeconds: 7,
+      transition: {
+        durationSeconds: 0.8,
+        kind: 'crossfade',
+      },
       volume: 0,
     },
     {
@@ -74,7 +78,11 @@ const project: Project = {
       id: 'circles-water',
       mediaPath:
         'media/pool/vertical/03_circles_water_avoiding_o…_202605162110.mp4',
-      startSeconds: 13,
+      startSeconds: 14,
+      transition: {
+        durationSeconds: 0.8,
+        kind: 'crossfade',
+      },
       volume: 0,
     },
     {

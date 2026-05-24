@@ -9,10 +9,7 @@ import {
 import { CaptionLayer } from '../captions/layer';
 import type { Project } from '../timeline/project';
 import { toFrameCount, toFrameOffset } from '../timeline/time';
-import {
-  resolveFadeInFrameCount,
-  resolveFadeOutFrameCount,
-} from '../timeline/transition';
+import { resolveTransition } from '../timeline/transition';
 import { requireClipDuration } from './metadata';
 
 export function Composition({
@@ -35,9 +32,7 @@ export function Composition({
         >
           <ClipLayer
             clip={clip}
-            clipFrameCount={requireClipDuration(clip, id)}
-            fadeInFrameCount={resolveFadeInFrameCount(clip, fps)}
-            fadeOutFrameCount={resolveFadeOutFrameCount(clips, index, fps)}
+            transition={resolveTransition(clips, index, fps, id)}
             projectId={id}
             fps={fps}
           />
@@ -77,39 +72,23 @@ export function Composition({
 
 function ClipLayer({
   clip,
-  clipFrameCount,
-  fadeInFrameCount,
-  fadeOutFrameCount,
+  transition,
   fps,
   projectId,
 }: {
   clip: Project['clips'][number];
-  clipFrameCount: number;
-  fadeInFrameCount: number;
-  fadeOutFrameCount: number;
+  transition: ReturnType<typeof resolveTransition>;
   fps: number;
   projectId: string;
 }) {
   const frame = useCurrentFrame();
-  const fadeInOpacity =
-    fadeInFrameCount === 0
+  const opacity =
+    transition.kind === 'cut'
       ? 1
-      : interpolate(frame, [0, fadeInFrameCount], [0, 1], {
+      : interpolate(frame, [0, transition.frameCount], [0, 1], {
           extrapolateLeft: 'clamp',
           extrapolateRight: 'clamp',
         });
-  const fadeOutOpacity =
-    fadeOutFrameCount === 0
-      ? 1
-      : interpolate(
-          frame,
-          [clipFrameCount - fadeOutFrameCount, clipFrameCount],
-          [1, 0],
-          {
-            extrapolateLeft: 'clamp',
-            extrapolateRight: 'clamp',
-          },
-        );
 
   return (
     <OffthreadVideo
@@ -125,7 +104,7 @@ function ClipLayer({
       style={{
         height: '100%',
         objectFit: clip.fit,
-        opacity: Math.min(fadeInOpacity, fadeOutOpacity),
+        opacity,
         width: '100%',
       }}
     />

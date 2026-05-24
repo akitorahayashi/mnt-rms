@@ -93,12 +93,12 @@ const project: Project = {
     {
       id: 'follow-up',
       mediaPath: 'media/follow-up.mp4',
-      startSeconds: 4.6,
-      fit: 'cover',
+      startSeconds: 9,
       transition: {
         kind: 'crossfade',
-        durationSeconds: 0.4,
+        durationSeconds: 0.6,
       },
+      fit: 'cover',
       volume: 0,
     },
   ],
@@ -136,6 +136,10 @@ Rules:
 - `styleName` and `motionName` must exist in `src/captions/`.
 - Time fields are expressed in seconds and may be decimals.
 - Seconds are rounded to the nearest frame using project `fps` during rendering.
+- Adjacent visual clips must not leave gaps.
+- Overlapping visual clips require `transition` on the incoming clip.
+- `transition.kind` supports `cut` and `crossfade`.
+- `crossfade.durationSeconds` must be positive and no larger than the overlap.
 
 ## Add A New Project
 

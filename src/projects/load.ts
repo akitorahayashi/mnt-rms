@@ -413,15 +413,25 @@ function requireOptionalTransition(
   const transition = requireRecord(value, fieldName);
   const kind = requireNonEmptyString(transition.kind, `${fieldName}.kind`);
 
-  if (kind !== 'crossfade') {
-    throw new Error(`${fieldName}.kind must be "crossfade"`);
+  if (kind === 'cut') {
+    if (transition.durationSeconds !== undefined) {
+      throw new Error(
+        `${fieldName}.durationSeconds is not allowed when kind is "cut"`,
+      );
+    }
+
+    return { kind };
   }
 
-  return {
-    durationSeconds: requirePositiveNumber(
-      transition.durationSeconds,
-      `${fieldName}.durationSeconds`,
-    ),
-    kind,
-  };
+  if (kind === 'crossfade') {
+    return {
+      durationSeconds: requirePositiveNumber(
+        transition.durationSeconds,
+        `${fieldName}.durationSeconds`,
+      ),
+      kind,
+    };
+  }
+
+  throw new Error(`${fieldName}.kind must be "cut" or "crossfade"`);
 }
