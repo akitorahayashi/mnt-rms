@@ -31,14 +31,16 @@ export async function stageProjectAssets(
       publicDirPath,
     }),
   );
-  const audioCopyJob = copyProjectAsset({
-    mediaPath: definition.audio.mediaPath,
-    projectDirectoryPath: directoryPath,
-    projectId: definition.id,
-    publicDirPath,
-  });
+  const audioCopyJobs = definition.audio.map((track) =>
+    copyProjectAsset({
+      mediaPath: track.mediaPath,
+      projectDirectoryPath: directoryPath,
+      projectId: definition.id,
+      publicDirPath,
+    }),
+  );
 
-  await Promise.all([...clipCopyJobs, audioCopyJob]);
+  await Promise.all([...clipCopyJobs, ...audioCopyJobs]);
 
   return {
     outputPath,

@@ -12,14 +12,18 @@ export function applyMediaSrc(project: Project): Project {
     };
   });
 
-  const audioPublicPath = toAssetPath(project.id, project.audio.mediaPath);
+  const audio = project.audio.map((track) => {
+    const publicPath = toAssetPath(project.id, track.mediaPath);
+
+    return {
+      ...track,
+      src: staticFile(publicPath),
+    };
+  });
 
   return {
     ...project,
-    audio: {
-      ...project.audio,
-      src: staticFile(audioPublicPath),
-    },
+    audio,
     clips,
   };
 }

@@ -1,6 +1,7 @@
 import { parseMedia } from '@remotion/media-parser';
 import type { CalculateMetadataFunction } from 'remotion';
 import type { Project } from './project';
+import { toFrameCount, toFrameOffset } from './time';
 
 export const calculateMetadata: CalculateMetadataFunction<Project> = async ({
   props,
@@ -15,10 +16,11 @@ export const calculateMetadata: CalculateMetadataFunction<Project> = async ({
     (sum, clip) => sum + requireClipDuration(clip, props.id),
     0,
   );
-  const durationInFrames = Math.min(
-    props.canvas.durationInFrames,
-    timelineDuration,
+  const maxDurationInFrames = toFrameCount(
+    props.canvas.durationSeconds,
+    props.canvas.fps,
   );
+  const durationInFrames = Math.min(maxDurationInFrames, timelineDuration);
 
   if (durationInFrames < 1) {
     throw new Error(
@@ -53,29 +55,32 @@ async function resolveClipDuration(
     1,
     Math.floor(slowDurationInSeconds * fps),
   );
-  const trimBeforeInFrames = clip.trimBeforeInFrames ?? 0;
-  const trimAfterInFrames = clip.trimAfterInFrames ?? sourceDurationInFrames;
-  const boundedTrimAfterInFrames = Math.min(
-    trimAfterInFrames,
+  const trimBeforeFrames = toFrameOffset(clip.trimBeforeSeconds ?? 0, fps);
+  const trimAfterFrames =
+    clip.trimAfterSeconds === undefined
+      ? sourceDurationInFrames
+      : toFrameOffset(clip.trimAfterSeconds, fps);
+  const boundedTrimAfterFrames = Math.min(
+    trimAfterFrames,
     sourceDurationInFrames,
   );
 
-  if (trimBeforeInFrames < 0) {
+  if (trimBeforeFrames < 0) {
     throw new Error(
-      `Clip trimBeforeInFrames must be >= 0. project=${projectId}, clip=${clip.id}`,
+      `Clip trimBeforeSeconds must be >= 0. project=${projectId}, clip=${clip.id}`,
     );
   }
 
-  if (boundedTrimAfterInFrames <= trimBeforeInFrames) {
+  if (boundedTrimAfterFrames <= trimBeforeFrames) {
     throw new Error(
-      `Clip trim window is invalid. project=${projectId}, clip=${clip.id}, trimBefore=${trimBeforeInFrames}, trimAfter=${boundedTrimAfterInFrames}`,
+      `Clip trim window is invalid. project=${projectId}, clip=${clip.id}, trimBeforeFrames=${trimBeforeFrames}, trimAfterFrames=${boundedTrimAfterFrames}`,
     );
   }
 
   return {
     ...clip,
-    durationInFrames: boundedTrimAfterInFrames - trimBeforeInFrames,
-    sourceDurationInFrames,
+    frameCount: boundedTrimAfterFrames - trimBeforeFrames,
+    sourceFrameCount: sourceDurationInFrames,
   };
 }
 
@@ -83,8 +88,8 @@ export function requireClipDuration(
   clip: Project['clips'][number],
   projectId: string,
 ): number {
-  if (clip.durationInFrames !== undefined) {
-    return clip.durationInFrames;
+  if (clip.frameCount !== undefined) {
+    return clip.frameCount;
   }
 
   throw new Error(

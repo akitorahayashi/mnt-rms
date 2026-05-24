@@ -105,9 +105,9 @@ function validateCanvas(value: unknown): Project['canvas'] {
   const canvas = requireRecord(value, 'project.canvas');
 
   return {
-    durationInFrames: requirePositiveNumber(
-      canvas.durationInFrames,
-      'project.canvas.durationInFrames',
+    durationSeconds: requirePositiveNumber(
+      canvas.durationSeconds,
+      'project.canvas.durationSeconds',
     ),
     fps: requirePositiveNumber(canvas.fps, 'project.canvas.fps'),
     height: requirePositiveNumber(canvas.height, 'project.canvas.height'),
@@ -142,13 +142,13 @@ function validateClip(value: unknown, index: number): Project['clips'][number] {
       clip.mediaPath,
       `project.clips[${index}].mediaPath`,
     ),
-    trimAfterInFrames: requireOptionalNonNegativeNumber(
-      clip.trimAfterInFrames,
-      `project.clips[${index}].trimAfterInFrames`,
+    trimAfterSeconds: requireOptionalNonNegativeNumber(
+      clip.trimAfterSeconds,
+      `project.clips[${index}].trimAfterSeconds`,
     ),
-    trimBeforeInFrames: requireOptionalNonNegativeNumber(
-      clip.trimBeforeInFrames,
-      `project.clips[${index}].trimBeforeInFrames`,
+    trimBeforeSeconds: requireOptionalNonNegativeNumber(
+      clip.trimBeforeSeconds,
+      `project.clips[${index}].trimBeforeSeconds`,
     ),
     volume: requireOptionalNonNegativeNumber(
       clip.volume,
@@ -200,11 +200,14 @@ function validateCaption(
   }
 
   return {
-    durationInFrames: requirePositiveNumber(
-      cue.durationInFrames,
-      `project.captions[${index}].durationInFrames`,
+    durationSeconds: requirePositiveNumber(
+      cue.durationSeconds,
+      `project.captions[${index}].durationSeconds`,
     ),
-    from: requireNonNegativeNumber(cue.from, `project.captions[${index}].from`),
+    startSeconds: requireNonNegativeNumber(
+      cue.startSeconds,
+      `project.captions[${index}].startSeconds`,
+    ),
     id: requireNonEmptyString(cue.id, `project.captions[${index}].id`),
     motionName: motionName as Cue['motionName'],
     styleName: styleName as Cue['styleName'],
@@ -213,22 +216,50 @@ function validateCaption(
 }
 
 function validateAudio(value: unknown): Project['audio'] {
-  const audio = requireRecord(value, 'project.audio');
+  if (!Array.isArray(value)) {
+    throw new Error('project.audio must be an array');
+  }
+
+  if (value.length < 1) {
+    throw new Error('project.audio must contain at least one audio clip');
+  }
+
+  return value.map((audioValue, index) => validateAudioClip(audioValue, index));
+}
+
+function validateAudioClip(
+  value: unknown,
+  index: number,
+): Project['audio'][number] {
+  const audio = requireRecord(value, `project.audio[${index}]`);
 
   return {
+    durationSeconds: requirePositiveNumber(
+      audio.durationSeconds,
+      `project.audio[${index}].durationSeconds`,
+    ),
+    startSeconds: requireNonNegativeNumber(
+      audio.startSeconds,
+      `project.audio[${index}].startSeconds`,
+    ),
+    id: requireNonEmptyString(audio.id, `project.audio[${index}].id`),
+    loop: requireOptionalBoolean(audio.loop, `project.audio[${index}].loop`),
     mediaPath: requireNonEmptyString(
       audio.mediaPath,
-      'project.audio.mediaPath',
+      `project.audio[${index}].mediaPath`,
     ),
-    trimAfter: requirePositiveNumber(
-      audio.trimAfter,
-      'project.audio.trimAfter',
+    trimAfterSeconds: requireOptionalNonNegativeNumber(
+      audio.trimAfterSeconds,
+      `project.audio[${index}].trimAfterSeconds`,
     ),
-    trimBefore: requireNonNegativeNumber(
-      audio.trimBefore,
-      'project.audio.trimBefore',
+    trimBeforeSeconds: requireNonNegativeNumber(
+      audio.trimBeforeSeconds,
+      `project.audio[${index}].trimBeforeSeconds`,
     ),
-    volume: requireNonNegativeNumber(audio.volume, 'project.audio.volume'),
+    volume: requireNonNegativeNumber(
+      audio.volume,
+      `project.audio[${index}].volume`,
+    ),
   };
 }
 
@@ -291,4 +322,19 @@ function requireOptionalNonNegativeNumber(
   }
 
   return requireNonNegativeNumber(value, fieldName);
+}
+
+function requireOptionalBoolean(
+  value: unknown,
+  fieldName: string,
+): boolean | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== 'boolean') {
+    throw new Error(`${fieldName} must be a boolean when provided`);
+  }
+
+  return value;
 }

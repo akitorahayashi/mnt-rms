@@ -67,7 +67,12 @@ function RemotionRoot() {
       width={runtimeProject.canvas.width}
       height={runtimeProject.canvas.height}
       fps={runtimeProject.canvas.fps}
-      durationInFrames={runtimeProject.canvas.durationInFrames}
+      durationInFrames={Math.max(
+        1,
+        Math.round(
+          runtimeProject.canvas.durationSeconds * runtimeProject.canvas.fps,
+        ),
+      )}
       defaultProps={runtimeProject}
       calculateMetadata={calculateMetadata}
     />

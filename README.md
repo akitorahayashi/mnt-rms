@@ -79,7 +79,7 @@ const project: Project = {
     width: 1080,
     height: 1920,
     fps: 30,
-    durationInFrames: 300,
+    durationSeconds: 10,
   },
   clips: [
     {
@@ -92,19 +92,25 @@ const project: Project = {
   captions: [
     {
       id: 'hook',
-      from: 10,
-      durationInFrames: 60,
+      startSeconds: 0.3,
+      durationSeconds: 2,
       text: 'Hello',
       styleName: 'centerHeadline',
       motionName: 'centerPop',
     },
   ],
-  audio: {
-    mediaPath: 'media/bgm.mp3',
-    trimBefore: 0,
-    trimAfter: 1000,
-    volume: 0.2,
-  },
+  audio: [
+    {
+      id: 'bgm-main',
+      mediaPath: 'media/bgm.mp3',
+      startSeconds: 0,
+      durationSeconds: 10,
+      loop: true,
+      trimBeforeSeconds: 0,
+      trimAfterSeconds: 30,
+      volume: 0.2,
+    },
+  ],
 };
 
 export default project;
@@ -115,6 +121,8 @@ Rules:
 - `mediaPath` is relative to the project directory.
 - `mediaPath` must stay inside the project directory (`..` is invalid).
 - `styleName` and `motionName` must exist in `src/captions/`.
+- Time fields are expressed in seconds and may be decimals.
+- Seconds are rounded to the nearest frame using project `fps` during rendering.
 
 ## Add A New Project
 

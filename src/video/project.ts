@@ -1,30 +1,34 @@
 import type { Cue } from '../captions/cue';
 
 export interface Project extends Record<string, unknown> {
-  audio: {
+  audio: Array<{
+    durationSeconds: number;
+    id: string;
+    loop?: boolean;
     mediaPath: string;
+    startSeconds: number;
     src?: string;
-    trimAfter: number;
-    trimBefore: number;
+    trimAfterSeconds?: number;
+    trimBeforeSeconds: number;
     volume: number;
-  };
+  }>;
   backgroundColor: string;
   canvas: {
-    durationInFrames: number;
+    durationSeconds: number;
     fps: number;
     height: number;
     width: number;
   };
   captions: Cue[];
   clips: Array<{
-    durationInFrames?: number;
+    frameCount?: number;
     fit: 'contain' | 'cover';
     id: string;
     mediaPath: string;
-    sourceDurationInFrames?: number;
+    sourceFrameCount?: number;
     src?: string;
-    trimAfterInFrames?: number;
-    trimBeforeInFrames?: number;
+    trimAfterSeconds?: number;
+    trimBeforeSeconds?: number;
     volume?: number;
   }>;
   id: string;
