@@ -20,7 +20,7 @@ bun install
 ## Quick Start
 
 ```bash
-bun run start help
+bun run help
 bun run rms compositions projects/manatee-float
 bun run rms render projects/manatee-float
 ```
@@ -33,7 +33,7 @@ Render output is written to:
 
 ```bash
 bun run rms <action> <project-path>
-bun run start
+bun run help
 ```
 
 - `action`

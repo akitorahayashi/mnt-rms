@@ -7,7 +7,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "bun src/cli.ts help",
+    "help": "bun src/cli.ts help",
     "rms": "bun src/cli.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",

@@ -18,7 +18,7 @@ The repository owns:
 
 The repository-owned tasks are:
 
-- `bun run start`
+- `bun run help`
 - `bun run fix`
 - `bun run check`
 - `bun run test`
