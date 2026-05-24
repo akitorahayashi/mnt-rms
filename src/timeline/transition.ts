@@ -30,17 +30,39 @@ export function resolveTransition(
   );
 
   if (overlapFrameCount <= 0) {
+    if (clip.transition?.kind === 'crossfade') {
+      throw new Error(
+        `Clip crossfade requires overlap. project=${projectId}, clip=${clip.id}`,
+      );
+    }
+
     return { kind: 'cut' };
   }
 
   const transition = requireClipTransition(clip, projectId);
 
   if (transition.kind === 'cut') {
-    return { kind: 'cut' };
+    throw new Error(
+      `Clip transition kind "cut" cannot be used with overlap. project=${projectId}, clip=${clip.id}`,
+    );
+  }
+
+  const transitionFrameCount = toFrameCount(transition.durationSeconds, fps);
+
+  if (transitionFrameCount > overlapFrameCount) {
+    throw new Error(
+      `Clip crossfade exceeds overlap. project=${projectId}, clip=${clip.id}, overlapFrames=${overlapFrameCount}, crossfadeFrames=${transitionFrameCount}`,
+    );
+  }
+
+  if (transitionFrameCount >= requireResolvedClipFrameCount(clip, projectId)) {
+    throw new Error(
+      `Clip crossfade must be shorter than the incoming clip. project=${projectId}, clip=${clip.id}, crossfadeFrames=${transitionFrameCount}`,
+    );
   }
 
   return {
-    frameCount: toFrameCount(transition.durationSeconds, fps),
+    frameCount: transitionFrameCount,
     kind: 'crossfade',
   };
 }

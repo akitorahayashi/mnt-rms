@@ -50,6 +50,22 @@ describe('timeline transitions', () => {
     );
   });
 
+  test('resolveTransition fails fast for overlap + cut', () => {
+    const clips = [
+      clip({ frameCount: 240, id: 'first', startSeconds: 0 }),
+      clip({
+        frameCount: 240,
+        id: 'second',
+        startSeconds: 7,
+        transition: { kind: 'cut' },
+      }),
+    ];
+
+    expect(() => resolveTransition(clips, 1, 30, 'sample')).toThrow(
+      'Clip transition kind "cut" cannot be used with overlap',
+    );
+  });
+
   test('rejects visual gaps between clips', () => {
     const clips = [
       clip({ frameCount: 240, id: 'first', startSeconds: 0 }),
