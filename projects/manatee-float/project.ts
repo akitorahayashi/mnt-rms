@@ -1,4 +1,4 @@
-import type { Project } from '../../src/video/project';
+import type { Project } from '../../src/timeline/project';
 
 const project: Project = {
   audio: [
@@ -59,12 +59,14 @@ const project: Project = {
       fit: 'cover',
       id: 'still-in-water',
       mediaPath: 'media/pool/vertical/01_still_in_water_202605162110.mp4',
+      startSeconds: 0,
       volume: 0,
     },
     {
       fit: 'cover',
       id: 'slowly-rises-surface',
       mediaPath: 'media/pool/vertical/02_slowly_rises_surface_202605162110.mp4',
+      startSeconds: 6,
       volume: 0,
     },
     {
@@ -72,6 +74,7 @@ const project: Project = {
       id: 'circles-water',
       mediaPath:
         'media/pool/vertical/03_circles_water_avoiding_o…_202605162110.mp4',
+      startSeconds: 13,
       volume: 0,
     },
     {
@@ -79,6 +82,7 @@ const project: Project = {
       id: 'floats-in-clear-spring',
       mediaPath:
         'media/pool/vertical/04_floats_in_clear_spring_202605162111.mp4',
+      startSeconds: 22,
       volume: 0,
     },
   ],

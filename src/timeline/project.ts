@@ -1,4 +1,5 @@
 import type { Cue } from '../captions/cue';
+import type { ClipTransition } from './transition';
 
 export interface Project extends Record<string, unknown> {
   audio: Array<{
@@ -26,7 +27,9 @@ export interface Project extends Record<string, unknown> {
     id: string;
     mediaPath: string;
     sourceFrameCount?: number;
+    startSeconds: number;
     src?: string;
+    transition?: ClipTransition;
     trimAfterSeconds?: number;
     trimBeforeSeconds?: number;
     volume: number;

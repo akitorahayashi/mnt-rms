@@ -1,6 +1,6 @@
 import { copyFile, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
-import { toAssetPath } from '../video/asset-path';
+import { toAssetPath } from './asset-path';
 import type { LoadedProject } from './load';
 
 export interface StagedProjectAssets {

@@ -40,15 +40,15 @@ function remotionRootSource(input: RemotionRootSourceInput): string {
   );
   const runtimeProjectBuilderImportPath = toImportSpecifier(
     input.rootEntryPath,
-    path.resolve('src/video/runtime.ts'),
+    path.resolve('src/composition/runtime.ts'),
   );
   const compositionImportPath = toImportSpecifier(
     input.rootEntryPath,
-    path.resolve('src/video/composition.tsx'),
+    path.resolve('src/composition/render.tsx'),
   );
   const metadataImportPath = toImportSpecifier(
     input.rootEntryPath,
-    path.resolve('src/video/metadata.ts'),
+    path.resolve('src/composition/metadata.ts'),
   );
 
   return `import { Composition, registerRoot } from 'remotion';

@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import type { Cue } from '../captions/cue';
 import { motionCatalog } from '../captions/motion';
 import { styleCatalog } from '../captions/style';
-import type { Project } from '../video/project';
+import type { Project } from '../timeline/project';
 
 export interface LoadedProject {
   definition: Project;
@@ -152,6 +152,14 @@ function validateClip(
       clip.mediaPath,
       `project.clips[${index}].mediaPath`,
       projectRootPath,
+    ),
+    startSeconds: requireNonNegativeNumber(
+      clip.startSeconds,
+      `project.clips[${index}].startSeconds`,
+    ),
+    transition: requireOptionalTransition(
+      clip.transition,
+      `project.clips[${index}].transition`,
     ),
     trimAfterSeconds: requireOptionalNonNegativeNumber(
       clip.trimAfterSeconds,
@@ -392,4 +400,28 @@ function requireProjectRelativePath(
   }
 
   return normalizedPath;
+}
+
+function requireOptionalTransition(
+  value: unknown,
+  fieldName: string,
+): Project['clips'][number]['transition'] {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const transition = requireRecord(value, fieldName);
+  const kind = requireNonEmptyString(transition.kind, `${fieldName}.kind`);
+
+  if (kind !== 'crossfade') {
+    throw new Error(`${fieldName}.kind must be "crossfade"`);
+  }
+
+  return {
+    durationSeconds: requirePositiveNumber(
+      transition.durationSeconds,
+      `${fieldName}.durationSeconds`,
+    ),
+    kind,
+  };
 }

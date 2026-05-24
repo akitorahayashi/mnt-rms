@@ -7,7 +7,8 @@ The repository is organized into three layers:
 
 - `projects/`: per-project data and media (`project.ts`, `media/`)
 - `src/captions/`: reusable caption styles and motions
-- `src/video/`, `src/projects/`, `src/commands/`: rendering pipeline, project
+- `src/timeline/`, `src/composition/`, `src/projects/`, `src/commands/`:
+  timeline model and validation, Remotion composition runtime, project
   loading/staging, and CLI execution
 
 ## Setup
@@ -69,7 +70,7 @@ Required top-level fields:
 Minimal example:
 
 ```ts
-import type { Project } from '../../src/video/project';
+import type { Project } from '../../src/timeline/project';
 
 const project: Project = {
   id: 'sample',
@@ -85,7 +86,19 @@ const project: Project = {
     {
       id: 'intro',
       mediaPath: 'media/intro.mp4',
+      startSeconds: 0,
       fit: 'cover',
+      volume: 0,
+    },
+    {
+      id: 'follow-up',
+      mediaPath: 'media/follow-up.mp4',
+      startSeconds: 4.6,
+      fit: 'cover',
+      transition: {
+        kind: 'crossfade',
+        durationSeconds: 0.4,
+      },
       volume: 0,
     },
   ],

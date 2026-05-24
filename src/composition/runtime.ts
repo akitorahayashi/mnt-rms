@@ -1,6 +1,6 @@
 import { staticFile } from 'remotion';
-import { toAssetPath } from './asset-path';
-import type { Project } from './project';
+import { toAssetPath } from '../projects/asset-path';
+import type { Project } from '../timeline/project';
 
 export function applyMediaSrc(project: Project): Project {
   const clips = project.clips.map((clip) => {
