@@ -24,9 +24,6 @@ export function Composition({
   subtitles,
 }: Project) {
   const fps = canvas.fps;
-  const orderedOverlays = [...overlays].sort(
-    (a, b) => (a.layer ?? 0) - (b.layer ?? 0),
-  );
 
   return (
     <AbsoluteFill style={{ backgroundColor }}>
@@ -61,7 +58,7 @@ export function Composition({
           />
         </Sequence>
       ))}
-      {orderedOverlays.map((overlay) => (
+      {overlays.map((overlay) => (
         <Sequence
           key={overlay.id}
           from={toFrameOffset(overlay.startSeconds, fps)}

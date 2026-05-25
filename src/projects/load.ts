@@ -280,15 +280,17 @@ function validateOverlays(
     throw new Error('project.overlays must be an array');
   }
 
-  return value.map((overlayValue, index) =>
-    validateOverlay(
-      overlayValue,
-      index,
-      projectRootPath,
-      knownStyleNames,
-      knownMotionNames,
-    ),
-  );
+  return value
+    .map((overlayValue, index) =>
+      validateOverlay(
+        overlayValue,
+        index,
+        projectRootPath,
+        knownStyleNames,
+        knownMotionNames,
+      ),
+    )
+    .sort((a, b) => (a.layer ?? 0) - (b.layer ?? 0));
 }
 
 function validateOverlay(

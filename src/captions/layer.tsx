@@ -25,8 +25,8 @@ export function TextLayer({ spec }: { spec: TextLayerSpec }) {
   return (
     <div
       style={{
-        ...motion,
         ...style,
+        ...motion,
         left: spec.x,
         position: 'absolute',
         top: spec.y,
