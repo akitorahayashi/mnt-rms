@@ -14,6 +14,7 @@ export const calculateMetadata: CalculateMetadataFunction<Project> = async ({
   );
 
   validateTransitions(clips, props.canvas.fps, props.id);
+  validateTextAndOverlayRanges(props);
   const timelineDuration = clips.reduce((max, clip) => {
     const clipEndFrame =
       toFrameOffset(clip.startSeconds, props.canvas.fps) +
@@ -21,11 +22,38 @@ export const calculateMetadata: CalculateMetadataFunction<Project> = async ({
 
     return Math.max(max, clipEndFrame);
   }, 0);
+  const subtitleTimelineDuration = props.subtitles.reduce((max, subtitle) => {
+    const subtitleEndFrame =
+      toFrameOffset(subtitle.startSeconds, props.canvas.fps) +
+      toFrameCount(subtitle.durationSeconds, props.canvas.fps);
+
+    return Math.max(max, subtitleEndFrame);
+  }, 0);
+  const overlayTimelineDuration = props.overlays.reduce((max, overlay) => {
+    const overlayEndFrame =
+      toFrameOffset(overlay.startSeconds, props.canvas.fps) +
+      toFrameCount(overlay.durationSeconds, props.canvas.fps);
+
+    return Math.max(max, overlayEndFrame);
+  }, 0);
+  const audioTimelineDuration = props.audio.reduce((max, audioClip) => {
+    const audioEndFrame =
+      toFrameOffset(audioClip.startSeconds, props.canvas.fps) +
+      toFrameCount(audioClip.durationSeconds, props.canvas.fps);
+
+    return Math.max(max, audioEndFrame);
+  }, 0);
+  const contentDuration = Math.max(
+    timelineDuration,
+    subtitleTimelineDuration,
+    overlayTimelineDuration,
+    audioTimelineDuration,
+  );
   const maxDurationInFrames = toFrameCount(
     props.canvas.durationSeconds,
     props.canvas.fps,
   );
-  const durationInFrames = Math.min(maxDurationInFrames, timelineDuration);
+  const durationInFrames = Math.min(maxDurationInFrames, contentDuration);
 
   if (durationInFrames < 1) {
     throw new Error(
@@ -113,4 +141,35 @@ function requireClipSrc(
   throw new Error(
     `Clip source path has not been resolved. project=${projectId}, clip=${clip.id}`,
   );
+}
+
+function validateTextAndOverlayRanges(project: Project): void {
+  const maxDurationInFrames = toFrameCount(
+    project.canvas.durationSeconds,
+    project.canvas.fps,
+  );
+
+  project.subtitles.forEach((subtitle) => {
+    const subtitleEndFrame =
+      toFrameOffset(subtitle.startSeconds, project.canvas.fps) +
+      toFrameCount(subtitle.durationSeconds, project.canvas.fps);
+
+    if (subtitleEndFrame > maxDurationInFrames) {
+      throw new Error(
+        `Subtitle exceeds canvas duration. project=${project.id}, subtitle=${subtitle.id}`,
+      );
+    }
+  });
+
+  project.overlays.forEach((overlay) => {
+    const overlayEndFrame =
+      toFrameOffset(overlay.startSeconds, project.canvas.fps) +
+      toFrameCount(overlay.durationSeconds, project.canvas.fps);
+
+    if (overlayEndFrame > maxDurationInFrames) {
+      throw new Error(
+        `Overlay exceeds canvas duration. project=${project.id}, overlay=${overlay.id}`,
+      );
+    }
+  });
 }

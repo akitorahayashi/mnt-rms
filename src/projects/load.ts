@@ -2,7 +2,6 @@ import { constants } from 'node:fs';
 import { access, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { Cue } from '../captions/cue';
 import { motionCatalog } from '../captions/motion';
 import { styleCatalog } from '../captions/style';
 import type { Project } from '../timeline/project';
@@ -80,9 +79,26 @@ async function importProjectModule(
 
 function validateProject(value: unknown, projectRootPath: string): Project {
   const project = requireRecord(value, 'project.default');
+  const knownStyleNames = new Set(Object.keys(styleCatalog));
+  const knownMotionNames = new Set(Object.keys(motionCatalog));
   const canvas = validateCanvas(project.canvas);
   const clips = validateClips(project.clips, projectRootPath);
-  const captions = validateCaptions(project.captions);
+  const subtitleDefaults = validateSubtitleDefaults(
+    project.subtitleDefaults,
+    knownStyleNames,
+    knownMotionNames,
+  );
+  const subtitles = validateSubtitles(
+    project.subtitles,
+    knownStyleNames,
+    knownMotionNames,
+  );
+  const overlays = validateOverlays(
+    project.overlays,
+    projectRootPath,
+    knownStyleNames,
+    knownMotionNames,
+  );
   const audio = validateAudio(project.audio, projectRootPath);
 
   return {
@@ -92,13 +108,15 @@ function validateProject(value: unknown, projectRootPath: string): Project {
       'project.backgroundColor',
     ),
     canvas,
-    captions,
     clips,
     id: requirePathSegment(project.id, 'project.id'),
+    overlays,
     outputFileName: requirePathSegment(
       project.outputFileName,
       'project.outputFileName',
     ),
+    subtitleDefaults,
+    subtitles,
   };
 }
 
@@ -176,62 +194,192 @@ function validateClip(
   };
 }
 
-function validateCaptions(value: unknown): Cue[] {
+function validateSubtitleDefaults(
+  value: unknown,
+  knownStyleNames: Set<string>,
+  knownMotionNames: Set<string>,
+): Project['subtitleDefaults'] {
+  const defaults = requireRecord(value, 'project.subtitleDefaults');
+  const styleName = requireKnownStyleName(
+    defaults.styleName,
+    'project.subtitleDefaults.styleName',
+    knownStyleNames,
+  );
+  const motionName = requireKnownMotionName(
+    defaults.motionName,
+    'project.subtitleDefaults.motionName',
+    knownMotionNames,
+  );
+
+  return {
+    motionName,
+    styleName,
+    x: requireFiniteNumber(defaults.x, 'project.subtitleDefaults.x'),
+    y: requireFiniteNumber(defaults.y, 'project.subtitleDefaults.y'),
+  };
+}
+
+function validateSubtitles(
+  value: unknown,
+  knownStyleNames: Set<string>,
+  knownMotionNames: Set<string>,
+): Project['subtitles'] {
   if (!Array.isArray(value)) {
-    throw new Error('project.captions must be an array');
+    throw new Error('project.subtitles must be an array');
   }
 
-  const knownStyleNames = new Set(Object.keys(styleCatalog));
-  const knownMotionNames = new Set(Object.keys(motionCatalog));
-
   return value.map((captionValue, index) =>
-    validateCaption(captionValue, index, knownStyleNames, knownMotionNames),
+    validateSubtitle(captionValue, index, knownStyleNames, knownMotionNames),
   );
 }
 
-function validateCaption(
+function validateSubtitle(
   value: unknown,
   index: number,
   knownStyleNames: Set<string>,
   knownMotionNames: Set<string>,
-): Cue {
-  const cue = requireRecord(value, `project.captions[${index}]`);
-  const styleName = requireNonEmptyString(
-    cue.styleName,
-    `project.captions[${index}].styleName`,
-  );
-
-  if (!knownStyleNames.has(styleName)) {
-    throw new Error(
-      `Unknown caption styleName "${styleName}". Available styles: ${[...knownStyleNames].join(', ')}`,
-    );
-  }
-
-  const motionName = requireNonEmptyString(
-    cue.motionName,
-    `project.captions[${index}].motionName`,
-  );
-
-  if (!knownMotionNames.has(motionName)) {
-    throw new Error(
-      `Unknown caption motionName "${motionName}". Available motions: ${[...knownMotionNames].join(', ')}`,
-    );
-  }
+): Project['subtitles'][number] {
+  const subtitle = requireRecord(value, `project.subtitles[${index}]`);
 
   return {
     durationSeconds: requirePositiveNumber(
-      cue.durationSeconds,
-      `project.captions[${index}].durationSeconds`,
+      subtitle.durationSeconds,
+      `project.subtitles[${index}].durationSeconds`,
     ),
     startSeconds: requireNonNegativeNumber(
-      cue.startSeconds,
-      `project.captions[${index}].startSeconds`,
+      subtitle.startSeconds,
+      `project.subtitles[${index}].startSeconds`,
     ),
-    id: requireNonEmptyString(cue.id, `project.captions[${index}].id`),
-    motionName: motionName as Cue['motionName'],
-    styleName: styleName as Cue['styleName'],
-    text: requireNonEmptyString(cue.text, `project.captions[${index}].text`),
+    id: requireNonEmptyString(subtitle.id, `project.subtitles[${index}].id`),
+    motionName: requireOptionalKnownMotionName(
+      subtitle.motionName,
+      `project.subtitles[${index}].motionName`,
+      knownMotionNames,
+    ),
+    styleName: requireOptionalKnownStyleName(
+      subtitle.styleName,
+      `project.subtitles[${index}].styleName`,
+      knownStyleNames,
+    ),
+    text: requireNonEmptyString(
+      subtitle.text,
+      `project.subtitles[${index}].text`,
+    ),
+    x: requireOptionalFiniteNumber(subtitle.x, `project.subtitles[${index}].x`),
+    y: requireOptionalFiniteNumber(subtitle.y, `project.subtitles[${index}].y`),
   };
+}
+
+function validateOverlays(
+  value: unknown,
+  projectRootPath: string,
+  knownStyleNames: Set<string>,
+  knownMotionNames: Set<string>,
+): Project['overlays'] {
+  if (!Array.isArray(value)) {
+    throw new Error('project.overlays must be an array');
+  }
+
+  return value
+    .map((overlayValue, index) =>
+      validateOverlay(
+        overlayValue,
+        index,
+        projectRootPath,
+        knownStyleNames,
+        knownMotionNames,
+      ),
+    )
+    .sort((a, b) => (a.layer ?? 0) - (b.layer ?? 0));
+}
+
+function validateOverlay(
+  value: unknown,
+  index: number,
+  projectRootPath: string,
+  knownStyleNames: Set<string>,
+  knownMotionNames: Set<string>,
+): Project['overlays'][number] {
+  const overlay = requireRecord(value, `project.overlays[${index}]`);
+  const kind = requireNonEmptyString(
+    overlay.kind,
+    `project.overlays[${index}].kind`,
+  );
+  const base = {
+    durationSeconds: requirePositiveNumber(
+      overlay.durationSeconds,
+      `project.overlays[${index}].durationSeconds`,
+    ),
+    id: requireNonEmptyString(overlay.id, `project.overlays[${index}].id`),
+    layer: requireOptionalFiniteNumber(
+      overlay.layer,
+      `project.overlays[${index}].layer`,
+    ),
+    startSeconds: requireNonNegativeNumber(
+      overlay.startSeconds,
+      `project.overlays[${index}].startSeconds`,
+    ),
+    x: requireFiniteNumber(overlay.x, `project.overlays[${index}].x`),
+    y: requireFiniteNumber(overlay.y, `project.overlays[${index}].y`),
+  };
+
+  if (kind === 'text') {
+    return {
+      ...base,
+      kind: 'text',
+      motionName: requireOptionalKnownMotionName(
+        overlay.motionName,
+        `project.overlays[${index}].motionName`,
+        knownMotionNames,
+      ),
+      styleName: requireOptionalKnownStyleName(
+        overlay.styleName,
+        `project.overlays[${index}].styleName`,
+        knownStyleNames,
+      ),
+      text: requireNonEmptyString(
+        overlay.text,
+        `project.overlays[${index}].text`,
+      ),
+    };
+  }
+
+  if (kind === 'image') {
+    const fit = overlay.fit;
+
+    if (fit !== undefined && fit !== 'contain' && fit !== 'cover') {
+      throw new Error(
+        `project.overlays[${index}].fit must be "contain" or "cover" when provided`,
+      );
+    }
+
+    return {
+      ...base,
+      fit,
+      height: requirePositiveNumber(
+        overlay.height,
+        `project.overlays[${index}].height`,
+      ),
+      kind: 'image',
+      mediaPath: requireProjectRelativePath(
+        overlay.mediaPath,
+        `project.overlays[${index}].mediaPath`,
+        projectRootPath,
+      ),
+      opacity: requireOptionalNumberInRange(
+        overlay.opacity,
+        `project.overlays[${index}].opacity`,
+        0,
+        1,
+      ),
+      width: requirePositiveNumber(
+        overlay.width,
+        `project.overlays[${index}].width`,
+      ),
+    };
+  }
+
+  throw new Error(`project.overlays[${index}].kind must be "text" or "image"`);
 }
 
 function validateAudio(
@@ -287,6 +435,100 @@ function validateAudioClip(
       `project.audio[${index}].volume`,
     ),
   };
+}
+
+function requireKnownStyleName(
+  value: unknown,
+  fieldName: string,
+  knownStyleNames: Set<string>,
+): Project['subtitleDefaults']['styleName'] {
+  const styleName = requireNonEmptyString(value, fieldName);
+
+  if (!knownStyleNames.has(styleName)) {
+    throw new Error(
+      `Unknown caption styleName "${styleName}". Available styles: ${[...knownStyleNames].join(', ')}`,
+    );
+  }
+
+  return styleName as Project['subtitleDefaults']['styleName'];
+}
+
+function requireKnownMotionName(
+  value: unknown,
+  fieldName: string,
+  knownMotionNames: Set<string>,
+): Project['subtitleDefaults']['motionName'] {
+  const motionName = requireNonEmptyString(value, fieldName);
+
+  if (!knownMotionNames.has(motionName)) {
+    throw new Error(
+      `Unknown caption motionName "${motionName}". Available motions: ${[...knownMotionNames].join(', ')}`,
+    );
+  }
+
+  return motionName as Project['subtitleDefaults']['motionName'];
+}
+
+function requireOptionalKnownStyleName(
+  value: unknown,
+  fieldName: string,
+  knownStyleNames: Set<string>,
+): Project['subtitleDefaults']['styleName'] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return requireKnownStyleName(value, fieldName, knownStyleNames);
+}
+
+function requireOptionalKnownMotionName(
+  value: unknown,
+  fieldName: string,
+  knownMotionNames: Set<string>,
+): Project['subtitleDefaults']['motionName'] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return requireKnownMotionName(value, fieldName, knownMotionNames);
+}
+
+function requireFiniteNumber(value: unknown, fieldName: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`${fieldName} must be a finite number`);
+  }
+
+  return value;
+}
+
+function requireOptionalFiniteNumber(
+  value: unknown,
+  fieldName: string,
+): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return requireFiniteNumber(value, fieldName);
+}
+
+function requireOptionalNumberInRange(
+  value: unknown,
+  fieldName: string,
+  min: number,
+  max: number,
+): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const numberValue = requireFiniteNumber(value, fieldName);
+
+  if (numberValue < min || numberValue > max) {
+    throw new Error(`${fieldName} must be between ${min} and ${max}`);
+  }
+
+  return numberValue;
 }
 
 function requireRecord(

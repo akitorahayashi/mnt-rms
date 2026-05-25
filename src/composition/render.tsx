@@ -1,12 +1,13 @@
 import {
   AbsoluteFill,
   Html5Audio,
+  Img,
   interpolate,
   OffthreadVideo,
   Sequence,
   useCurrentFrame,
 } from 'remotion';
-import { CaptionLayer } from '../captions/layer';
+import { TextLayer } from '../captions/layer';
 import type { Project } from '../timeline/project';
 import { toFrameCount, toFrameOffset } from '../timeline/time';
 import { resolveTransition } from '../timeline/transition';
@@ -16,9 +17,11 @@ export function Composition({
   audio,
   backgroundColor,
   canvas,
-  captions,
   clips,
   id,
+  overlays,
+  subtitleDefaults,
+  subtitles,
 }: Project) {
   const fps = canvas.fps;
 
@@ -38,13 +41,53 @@ export function Composition({
           />
         </Sequence>
       ))}
-      {captions.map((cue) => (
+      {subtitles.map((subtitle) => (
         <Sequence
-          key={cue.id}
-          from={toFrameOffset(cue.startSeconds, fps)}
-          durationInFrames={toFrameCount(cue.durationSeconds, fps)}
+          key={subtitle.id}
+          from={toFrameOffset(subtitle.startSeconds, fps)}
+          durationInFrames={toFrameCount(subtitle.durationSeconds, fps)}
         >
-          <CaptionLayer cue={cue} />
+          <TextLayer
+            spec={{
+              motionName: subtitle.motionName ?? subtitleDefaults.motionName,
+              styleName: subtitle.styleName ?? subtitleDefaults.styleName,
+              text: subtitle.text,
+              x: subtitle.x ?? subtitleDefaults.x,
+              y: subtitle.y ?? subtitleDefaults.y,
+            }}
+          />
+        </Sequence>
+      ))}
+      {overlays.map((overlay) => (
+        <Sequence
+          key={overlay.id}
+          from={toFrameOffset(overlay.startSeconds, fps)}
+          durationInFrames={toFrameCount(overlay.durationSeconds, fps)}
+        >
+          {overlay.kind === 'text' ? (
+            <TextLayer
+              spec={{
+                motionName: overlay.motionName ?? subtitleDefaults.motionName,
+                styleName: overlay.styleName ?? subtitleDefaults.styleName,
+                text: overlay.text,
+                x: overlay.x,
+                y: overlay.y,
+              }}
+            />
+          ) : (
+            <Img
+              src={requireOverlaySrc(overlay, id)}
+              style={{
+                height: overlay.height,
+                left: overlay.x,
+                objectFit: overlay.fit ?? 'contain',
+                opacity: overlay.opacity ?? 1,
+                position: 'absolute',
+                top: overlay.y,
+                width: overlay.width,
+              }}
+            />
+          )}
         </Sequence>
       ))}
       {audio.map((audioClip) => (
@@ -134,5 +177,18 @@ function requireAudioSrc(
 
   throw new Error(
     `Audio source path has not been resolved. project=${projectId}, audio=${audioClip.id}`,
+  );
+}
+
+function requireOverlaySrc(
+  overlay: Extract<Project['overlays'][number], { kind: 'image' }>,
+  projectId: string,
+): string {
+  if (overlay.src !== undefined) {
+    return overlay.src;
+  }
+
+  throw new Error(
+    `Overlay source path has not been resolved. project=${projectId}, overlay=${overlay.id}`,
   );
 }

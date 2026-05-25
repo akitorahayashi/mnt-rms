@@ -39,8 +39,22 @@ export async function stageProjectAssets(
       publicDirPath,
     }),
   );
+  const overlayImageCopyJobs = definition.overlays
+    .filter((overlay) => overlay.kind === 'image')
+    .map((overlay) =>
+      copyProjectAsset({
+        mediaPath: overlay.mediaPath,
+        projectDirectoryPath: directoryPath,
+        projectId: definition.id,
+        publicDirPath,
+      }),
+    );
 
-  await Promise.all([...clipCopyJobs, ...audioCopyJobs]);
+  await Promise.all([
+    ...clipCopyJobs,
+    ...audioCopyJobs,
+    ...overlayImageCopyJobs,
+  ]);
 
   return {
     outputPath,

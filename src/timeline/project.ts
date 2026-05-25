@@ -1,4 +1,4 @@
-import type { Cue } from '../captions/cue';
+import type { MotionName, StyleName } from '../captions/cue';
 
 export type ClipTransition =
   | {
@@ -7,6 +7,53 @@ export type ClipTransition =
   | {
       durationSeconds: number;
       kind: 'crossfade';
+    };
+
+export interface SubtitleDefaults {
+  motionName: MotionName;
+  styleName: StyleName;
+  x: number;
+  y: number;
+}
+
+export interface Subtitle {
+  durationSeconds: number;
+  id: string;
+  motionName?: MotionName;
+  startSeconds: number;
+  styleName?: StyleName;
+  text: string;
+  x?: number;
+  y?: number;
+}
+
+export type Overlay =
+  | {
+      durationSeconds: number;
+      id: string;
+      kind: 'image';
+      layer?: number;
+      mediaPath: string;
+      opacity?: number;
+      src?: string;
+      startSeconds: number;
+      width: number;
+      x: number;
+      y: number;
+      fit?: 'contain' | 'cover';
+      height: number;
+    }
+  | {
+      durationSeconds: number;
+      id: string;
+      kind: 'text';
+      layer?: number;
+      motionName?: MotionName;
+      startSeconds: number;
+      styleName?: StyleName;
+      text: string;
+      x: number;
+      y: number;
     };
 
 export interface Project extends Record<string, unknown> {
@@ -28,7 +75,9 @@ export interface Project extends Record<string, unknown> {
     height: number;
     width: number;
   };
-  captions: Cue[];
+  overlays: Overlay[];
+  subtitleDefaults: SubtitleDefaults;
+  subtitles: Subtitle[];
   clips: Array<{
     frameCount?: number;
     fit: 'contain' | 'cover';

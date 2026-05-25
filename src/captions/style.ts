@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 
 export const styleCatalog = {
   centerHeadline: {
-    color: '#fff7db',
+    color: '#ffffff',
     fontFamily: 'Hiragino Sans, Yu Gothic, sans-serif',
     fontSize: 82,
     fontWeight: 900,
