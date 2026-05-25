@@ -21,9 +21,23 @@ export function applyMediaSrc(project: Project): Project {
     };
   });
 
+  const overlays = project.overlays.map((overlay) => {
+    if (overlay.kind !== 'image') {
+      return overlay;
+    }
+
+    const publicPath = toAssetPath(project.id, overlay.mediaPath);
+
+    return {
+      ...overlay,
+      src: staticFile(publicPath),
+    };
+  });
+
   return {
     ...project,
     audio,
     clips,
+    overlays,
   };
 }

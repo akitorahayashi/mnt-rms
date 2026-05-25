@@ -1,15 +1,23 @@
 import { useCurrentFrame } from 'remotion';
-import type { Cue } from './cue';
+import type { MotionName, StyleName } from './cue';
 import { motionCatalog } from './motion';
 import { styleCatalog } from './style';
 
-export function CaptionLayer({ cue }: { cue: Cue }) {
+export interface TextLayerSpec {
+  motionName: MotionName;
+  styleName: StyleName;
+  text: string;
+  x: number;
+  y: number;
+}
+
+export function TextLayer({ spec }: { spec: TextLayerSpec }) {
   const frame = useCurrentFrame();
-  const style = styleCatalog[cue.styleName];
-  const motionFactory = motionCatalog[cue.motionName];
+  const style = styleCatalog[spec.styleName];
+  const motionFactory = motionCatalog[spec.motionName];
 
   if (motionFactory === undefined) {
-    throw new Error(`Unknown caption motionName: ${cue.motionName}`);
+    throw new Error(`Unknown caption motionName: ${spec.motionName}`);
   }
 
   const motion = motionFactory(frame);
@@ -17,11 +25,14 @@ export function CaptionLayer({ cue }: { cue: Cue }) {
   return (
     <div
       style={{
-        ...style,
         ...motion,
+        ...style,
+        left: spec.x,
+        position: 'absolute',
+        top: spec.y,
       }}
     >
-      {cue.text}
+      {spec.text}
     </div>
   );
 }

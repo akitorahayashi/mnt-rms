@@ -38,21 +38,25 @@ describe('loadProject', () => {
     );
   });
 
-  test('requires caption motionName to be explicit', async () => {
+  test('requires subtitleDefaults motionName to be explicit', async () => {
     const projectPath = await writeProjectFixture('missing-motion-name', {
-      captions: [
+      subtitleDefaults: {
+        styleName: 'centerHeadline',
+        x: 540,
+        y: 960,
+      },
+      subtitles: [
         {
           durationSeconds: 1,
-          id: 'caption-1',
+          id: 'subtitle-1',
           startSeconds: 0,
-          styleName: 'centerHeadline',
           text: 'Hello',
         },
       ],
     });
 
     await expect(loadProject(projectPath)).rejects.toThrow(
-      'project.captions[0].motionName must be a non-empty string',
+      'project.subtitleDefaults.motionName must be a non-empty string',
     );
   });
 
@@ -111,13 +115,18 @@ async function writeProjectFixture(
       height: 1920,
       width: 1080,
     },
-    captions: [
+    overlays: [],
+    subtitleDefaults: {
+      motionName: 'centerPop',
+      styleName: 'centerHeadline',
+      x: 540,
+      y: 960,
+    },
+    subtitles: [
       {
         durationSeconds: 1,
-        id: 'caption-1',
-        motionName: 'centerPop',
+        id: 'subtitle-1',
         startSeconds: 0,
-        styleName: 'centerHeadline',
         text: 'Hello',
       },
     ],

@@ -64,7 +64,9 @@ Required top-level fields:
 - `backgroundColor`
 - `canvas`
 - `clips`
-- `captions`
+- `subtitleDefaults`
+- `subtitles`
+- `overlays`
 - `audio`
 
 Minimal example:
@@ -102,14 +104,33 @@ const project: Project = {
       volume: 0,
     },
   ],
-  captions: [
+  subtitleDefaults: {
+    styleName: 'centerHeadline',
+    motionName: 'centerPop',
+    x: 540,
+    y: 960,
+  },
+  subtitles: [
     {
       id: 'hook',
       startSeconds: 0.3,
       durationSeconds: 2,
       text: 'Hello',
-      styleName: 'centerHeadline',
-      motionName: 'centerPop',
+      y: 880,
+    },
+  ],
+  overlays: [
+    {
+      id: 'logo',
+      kind: 'image',
+      mediaPath: 'media/logo.png',
+      startSeconds: 0,
+      durationSeconds: 10,
+      x: 32,
+      y: 32,
+      width: 180,
+      height: 180,
+      opacity: 0.92,
     },
   ],
   audio: [
@@ -136,6 +157,8 @@ Rules:
 - `styleName` and `motionName` must exist in `src/captions/`.
 - Time fields are expressed in seconds and may be decimals.
 - Seconds are rounded to the nearest frame using project `fps` during rendering.
+- `subtitles` may override `x`, `y`, `styleName`, and `motionName` per item.
+- `overlays` supports `kind: "text"` and `kind: "image"`.
 - Adjacent visual clips must not leave gaps.
 - Overlapping visual clips require `transition` on the incoming clip.
 - `transition.kind` supports `cut` and `crossfade`.
