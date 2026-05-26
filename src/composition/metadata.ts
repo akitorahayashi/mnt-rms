@@ -83,14 +83,15 @@ function assignSequentialStartTimes(
   fps: number,
   projectId: string,
 ): Project['clips'] {
+  const assignedClips: Project['clips'] = [];
   let currentFrame = 0;
 
-  return clips.map((clip, index) => {
-    if (index > 0) {
-      const prev = clips[index - 1];
+  for (const clip of clips) {
+    if (assignedClips.length > 0) {
+      const prev = assignedClips[assignedClips.length - 1];
       if (prev === undefined) {
         throw new Error(
-          `Previous clip is missing. project=${projectId}, index=${index}`,
+          `Previous clip is missing. project=${projectId}, index=${assignedClips.length}`,
         );
       }
       const prevEndFrame =
@@ -103,8 +104,10 @@ function assignSequentialStartTimes(
           : 0;
       currentFrame = prevEndFrame - crossfadeFrames;
     }
-    return { ...clip, startSeconds: currentFrame / fps };
-  });
+    assignedClips.push({ ...clip, startSeconds: currentFrame / fps });
+  }
+
+  return assignedClips;
 }
 
 async function resolveClipDuration(
@@ -187,14 +190,22 @@ async function resolveAudioDuration(
   }
 
   const trimBefore = audioClip.trimBeforeSeconds;
-  const trimAfter = audioClip.trimAfterSeconds ?? 0;
 
   if (
     audioClip.trimAfterSeconds !== undefined &&
-    trimAfter > durationInSeconds
+    audioClip.trimAfterSeconds > durationInSeconds
   ) {
     throw new Error(
-      `Audio trimAfterSeconds exceeds source duration. project=${projectId}, audio=${audioClip.id}, trimAfterSeconds=${trimAfter}, sourceDurationSeconds=${durationInSeconds}`,
+      `Audio trimAfterSeconds exceeds source duration. project=${projectId}, audio=${audioClip.id}, trimAfterSeconds=${audioClip.trimAfterSeconds}, sourceDurationSeconds=${durationInSeconds}`,
+    );
+  }
+
+  if (
+    audioClip.trimAfterSeconds !== undefined &&
+    audioClip.trimAfterSeconds <= trimBefore
+  ) {
+    throw new Error(
+      `Audio trim window is invalid. project=${projectId}, audio=${audioClip.id}, trimBeforeSeconds=${trimBefore}, trimAfterSeconds=${audioClip.trimAfterSeconds}`,
     );
   }
 
@@ -205,7 +216,9 @@ async function resolveAudioDuration(
     effectiveDurationSeconds =
       clipTimelineDuration / fps - audioClip.startSeconds;
   } else {
-    effectiveDurationSeconds = durationInSeconds - trimBefore - trimAfter;
+    // trimAfterSeconds is an absolute source timestamp (same semantics as clips)
+    const endSeconds = audioClip.trimAfterSeconds ?? durationInSeconds;
+    effectiveDurationSeconds = endSeconds - trimBefore;
   }
 
   if (effectiveDurationSeconds <= 0) {
