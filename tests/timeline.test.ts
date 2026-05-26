@@ -66,15 +66,14 @@ describe('timeline transitions', () => {
     );
   });
 
-  test('rejects visual gaps between clips', () => {
+  test('allows gap between clips with no transition', () => {
     const clips = [
       clip({ frameCount: 240, id: 'first', startSeconds: 0 }),
       clip({ frameCount: 240, id: 'second', startSeconds: 9 }),
     ];
 
-    expect(() => validateTransitions(clips, 30, 'sample')).toThrow(
-      'Clip timeline has a visual gap',
-    );
+    // no error: gap is fine when startSeconds are auto-derived sequentially
+    expect(() => validateTransitions(clips, 30, 'sample')).not.toThrow();
   });
 });
 

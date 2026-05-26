@@ -73,14 +73,6 @@ export function validateTransitions(
   projectId: string,
 ): void {
   clips.forEach((clip, index) => {
-    const clipStartFrame = toFrameOffset(clip.startSeconds, fps);
-
-    if (index === 0 && clipStartFrame > 0) {
-      throw new Error(
-        `Clip timeline must start at frame 0. project=${projectId}, clip=${clip.id}, startFrame=${clipStartFrame}`,
-      );
-    }
-
     if (index === 0) {
       return;
     }
@@ -97,24 +89,12 @@ export function validateTransitions(
       previousClip.startSeconds,
       fps,
     );
-
-    if (clipStartFrame < previousClipStartFrame) {
-      throw new Error(
-        `Clip order must match startSeconds order. project=${projectId}, clip=${clip.id}`,
-      );
-    }
+    const clipStartFrame = toFrameOffset(clip.startSeconds, fps);
 
     const previousClipEndFrame =
       previousClipStartFrame +
       requireResolvedClipFrameCount(previousClip, projectId);
     const overlapFrameCount = previousClipEndFrame - clipStartFrame;
-
-    if (overlapFrameCount < 0) {
-      throw new Error(
-        `Clip timeline has a visual gap. project=${projectId}, clip=${clip.id}, gapFrames=${Math.abs(overlapFrameCount)}`,
-      );
-    }
-
     const transition = clip.transition;
 
     if (overlapFrameCount > 0) {

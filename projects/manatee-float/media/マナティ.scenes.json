@@ -1,0 +1,90 @@
+{
+  "scenes": [
+    {
+      "scene_number": 1,
+      "scene_file_name": "01_manatee_intro",
+      "narration": "この丸々としていて、水中をゆったり漂う平和の象徴みたいな生き物はマナティーです。ですが、実はその中身というか「浮かぶ仕組み」がだいぶやばいことになっています。",
+      "estimated_speech_seconds": 12,
+      "clip_seconds": 16,
+      "visual_scene_descriptions": [
+        "澄んだ水の中でマナティーがゆったり漂い、丸い体がやわらかな光に包まれている。",
+        "水面近くを進むマナティーが、穏やかな表情のまま静かに浮かび続けている。"
+      ]
+    },
+    {
+      "scene_number": 2,
+      "scene_file_name": "02_massive_herbivory",
+      "narration": "体長は約3メートル、体重は重いものだと1.5トンにまで膨らみます。軽自動車を軽々と超えるこの巨体を維持するためだけに、毎日100キロから200キロ近い草を、ただひたすらムシャムシャと食べ続けています。",
+      "estimated_speech_seconds": 15,
+      "clip_seconds": 16,
+      "visual_scene_descriptions": [
+        "マナティーが水底の水草に顔を近づけ、巨大な体でゆっくり食べ続けている。",
+        "細かい砂とちぎれた水草が水中に舞い、マナティーの巨体の重さがよく分かる。"
+      ]
+    },
+    {
+      "scene_number": 3,
+      "scene_file_name": "03_precise_buoyancy_control",
+      "narration": "特に衝撃的なのが、その巨体を水中でミリ単位でコントロールする技術です。",
+      "estimated_speech_seconds": 5,
+      "clip_seconds": 8,
+      "visual_scene_descriptions": [
+        "マナティーが水中の中層で、ほとんど動かずにぴたりと静止している。"
+      ]
+    },
+    {
+      "scene_number": 4,
+      "scene_file_name": "04_perfect_underwater_motion",
+      "narration": "まるで最新鋭の潜水艦のような調整能力を持っていて、水中でピタッと静止したり、スッと浮上したりを自由自在にやってのけます。見た目からは想像もつかないほど、無駄のない完璧な動きで水中を支配しているのです。",
+      "estimated_speech_seconds": 15,
+      "clip_seconds": 16,
+      "visual_scene_descriptions": [
+        "マナティーが滑らかに水面へ浮上し、また中層へ戻っていく。",
+        "大きな体なのに無駄のない泳ぎで、水中を静かに移動するマナティーが映っている。"
+      ]
+    },
+    {
+      "scene_number": 5,
+      "scene_file_name": "05_fart_buoyancy_control",
+      "narration": "ところが、この完璧すぎる浮力調整の「中身」を暴くと、一気にイメージが崩壊します。実は彼らは、おなかの中に溜まった「大量のおなら」を出し入れすることで、浮かぶ力をコントロールしているのです。",
+      "estimated_speech_seconds": 14,
+      "clip_seconds": 16,
+      "visual_scene_descriptions": [
+        "水中でマナティーの体が穏やかに浮き沈みし、腹のあたりにやわらかな気泡が見えている。",
+        "水面近くを進むマナティーのまわりに白い泡が連なり、浮かぶ力が目に見える形で表れている。"
+      ]
+    },
+    {
+      "scene_number": 6,
+      "scene_file_name": "06_gas_release_and_trouble",
+      "narration": "まず、泳いでいる間はずっと、大量のおならをそこらじゅうに放出し続けています。それだけでも台無しですが、もしガスが溜まりすぎると、今度は体が浮きすぎて沈めなくなるという本末転倒なトラブルまで起こします。",
+      "estimated_speech_seconds": 14,
+      "clip_seconds": 16,
+      "visual_scene_descriptions": [
+        "マナティーが澄んだ水中を進みながら、後ろに細い泡の帯を長く引いている。",
+        "体が上へ押し上げられたマナティーが、水面近くで下へ潜ろうとしてもなかなか沈めずにいる。"
+      ]
+    },
+    {
+      "scene_number": 7,
+      "scene_file_name": "07_forced_fart_treatment",
+      "narration": "過去には、おなかがパンパンで潜れなくなったマナティーが、薬で強制的におならを出させられてようやく帰還できたという、情けない治療記録まで残っています。",
+      "estimated_speech_seconds": 11,
+      "clip_seconds": 16,
+      "visual_scene_descriptions": [
+        "保護施設のプールで、腹が大きくふくらんだマナティーが水面に浮いたままになっている。",
+        "治療を受けるマナティーのそばでスタッフが見守り、静かな施設の中に泡立つ水面が広がっている。"
+      ]
+    },
+    {
+      "scene_number": 8,
+      "scene_file_name": "08_fart_engine_manatee",
+      "narration": "それが、究極の癒やし系の皮を被りながら、「おならエンジン」をフル稼働させて浮いている生き物、マナティーです。",
+      "estimated_speech_seconds": 8,
+      "clip_seconds": 8,
+      "visual_scene_descriptions": [
+        "水面直下をゆっくり泳ぐマナティーの後ろに白い泡が連なり、静かな水面が細かく揺れている。"
+      ]
+    }
+  ]
+}

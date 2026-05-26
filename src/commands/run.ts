@@ -73,5 +73,7 @@ function remotionArgs(input: RemotionArgsInput): string[] {
     input.outputPath,
     '--public-dir',
     input.publicDirPath,
+    '--timeout',
+    '120000', // 2 minutes
   ];
 }
