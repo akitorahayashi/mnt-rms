@@ -88,6 +88,60 @@ describe('loadProject', () => {
       'project.clips[1].transition.durationSeconds is not allowed when kind is "cut"',
     );
   });
+
+  test('rejects legacy flat audio array definitions', async () => {
+    const projectPath = await writeProjectFixture('legacy-audio-array', {
+      audio: [],
+    });
+
+    await expect(loadProject(projectPath)).rejects.toThrow(
+      'project.audio must be an object with narration, music, and effects lanes',
+    );
+  });
+
+  test('flattens lane-based audio clips in a deterministic order', async () => {
+    const projectPath = await writeProjectFixture('lane-audio-definition', {
+      audio: {
+        effects: [
+          {
+            durationSeconds: 1,
+            id: 'effect-1',
+            mediaPath: 'media/effect.wav',
+            startSeconds: 0.5,
+            trimBeforeSeconds: 0,
+            volume: 0.8,
+          },
+        ],
+        music: [
+          {
+            durationSeconds: 2,
+            id: 'music-1',
+            mediaPath: 'media/music.mp3',
+            startSeconds: 0,
+            trimBeforeSeconds: 0,
+            volume: 0.25,
+          },
+        ],
+        narration: [
+          {
+            durationSeconds: 1.2,
+            id: 'narration-1',
+            mediaPath: 'media/narration.wav',
+            startSeconds: 0.2,
+            trimBeforeSeconds: 0,
+            volume: 1,
+          },
+        ],
+      },
+    });
+    const loaded = await loadProject(projectPath);
+
+    expect(loaded.definition.audio.map((clip) => clip.id)).toEqual([
+      'music-1',
+      'narration-1',
+      'effect-1',
+    ]);
+  });
 });
 
 async function writeProjectFixture(
@@ -98,16 +152,20 @@ async function writeProjectFixture(
   await mkdir(projectDirectoryPath, { recursive: true });
 
   const projectDefinition = {
-    audio: [
-      {
-        durationSeconds: 2,
-        id: 'audio-1',
-        mediaPath: 'media/audio.mp3',
-        startSeconds: 0,
-        trimBeforeSeconds: 0,
-        volume: 0.5,
-      },
-    ],
+    audio: {
+      effects: [],
+      music: [
+        {
+          durationSeconds: 2,
+          id: 'audio-1',
+          mediaPath: 'media/audio.mp3',
+          startSeconds: 0,
+          trimBeforeSeconds: 0,
+          volume: 0.5,
+        },
+      ],
+      narration: [],
+    },
     backgroundColor: '#000000',
     canvas: {
       durationSeconds: 2,

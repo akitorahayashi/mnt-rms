@@ -1,8 +1,18 @@
 import { staticFile } from 'remotion';
 import { toAssetPath } from '../projects/asset-path';
-import type { Project } from '../timeline/project';
+import {
+  flattenAudioLanes,
+  type Project,
+  type ProjectDefinition,
+} from '../timeline/project';
 
-export function applyMediaSrc(project: Project): Project {
+export function applyMediaSrc(projectDefinition: ProjectDefinition): Project {
+  const project: Project = {
+    ...projectDefinition,
+    audio: flattenAudioLanes(projectDefinition.audio),
+    clips: projectDefinition.clips,
+  };
+
   const clips = project.clips.map((clip) => {
     const publicPath = toAssetPath(project.id, clip.mediaPath);
 

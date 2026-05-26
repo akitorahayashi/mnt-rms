@@ -4,7 +4,12 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { motionCatalog } from '../captions/motion';
 import { styleCatalog } from '../captions/style';
-import type { Project } from '../timeline/project';
+import {
+  type AudioLaneName,
+  type AudioLanes,
+  flattenAudioLanes,
+  type Project,
+} from '../timeline/project';
 
 export interface LoadedProject {
   definition: Project;
@@ -386,54 +391,75 @@ function validateAudio(
   value: unknown,
   projectRootPath: string,
 ): Project['audio'] {
-  if (!Array.isArray(value)) {
-    throw new Error('project.audio must be an array');
+  if (Array.isArray(value)) {
+    throw new Error(
+      'project.audio must be an object with narration, music, and effects lanes',
+    );
   }
 
-  if (value.length < 1) {
+  const audio = requireRecord(value, 'project.audio');
+  const lanes: AudioLanes = {
+    effects: validateAudioLane(audio.effects, 'effects', projectRootPath),
+    music: validateAudioLane(audio.music, 'music', projectRootPath),
+    narration: validateAudioLane(audio.narration, 'narration', projectRootPath),
+  };
+  const flatAudio = flattenAudioLanes(lanes);
+
+  if (flatAudio.length < 1) {
     throw new Error('project.audio must contain at least one audio clip');
   }
 
+  return flatAudio;
+}
+
+function validateAudioLane(
+  value: unknown,
+  laneName: AudioLaneName,
+  projectRootPath: string,
+): AudioLanes[AudioLaneName] {
+  if (!Array.isArray(value)) {
+    throw new Error(`project.audio.${laneName} must be an array`);
+  }
+
   return value.map((audioValue, index) =>
-    validateAudioClip(audioValue, index, projectRootPath),
+    validateAudioClip(audioValue, laneName, index, projectRootPath),
   );
 }
 
 function validateAudioClip(
   value: unknown,
+  laneName: AudioLaneName,
   index: number,
   projectRootPath: string,
 ): Project['audio'][number] {
-  const audio = requireRecord(value, `project.audio[${index}]`);
+  const fieldPrefix = `project.audio.${laneName}[${index}]`;
+  const audio = requireRecord(value, fieldPrefix);
 
   return {
     durationSeconds: requirePositiveNumber(
       audio.durationSeconds,
-      `project.audio[${index}].durationSeconds`,
+      `${fieldPrefix}.durationSeconds`,
     ),
     startSeconds: requireNonNegativeNumber(
       audio.startSeconds,
-      `project.audio[${index}].startSeconds`,
+      `${fieldPrefix}.startSeconds`,
     ),
-    id: requireNonEmptyString(audio.id, `project.audio[${index}].id`),
-    loop: requireOptionalBoolean(audio.loop, `project.audio[${index}].loop`),
+    id: requireNonEmptyString(audio.id, `${fieldPrefix}.id`),
+    loop: requireOptionalBoolean(audio.loop, `${fieldPrefix}.loop`),
     mediaPath: requireProjectRelativePath(
       audio.mediaPath,
-      `project.audio[${index}].mediaPath`,
+      `${fieldPrefix}.mediaPath`,
       projectRootPath,
     ),
     trimAfterSeconds: requireOptionalNonNegativeNumber(
       audio.trimAfterSeconds,
-      `project.audio[${index}].trimAfterSeconds`,
+      `${fieldPrefix}.trimAfterSeconds`,
     ),
     trimBeforeSeconds: requireNonNegativeNumber(
       audio.trimBeforeSeconds,
-      `project.audio[${index}].trimBeforeSeconds`,
+      `${fieldPrefix}.trimBeforeSeconds`,
     ),
-    volume: requireNonNegativeNumber(
-      audio.volume,
-      `project.audio[${index}].volume`,
-    ),
+    volume: requireNonNegativeNumber(audio.volume, `${fieldPrefix}.volume`),
   };
 }
 
