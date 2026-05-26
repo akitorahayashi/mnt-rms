@@ -1,74 +1,114 @@
 import { parseMedia } from '@remotion/media-parser';
 import type { CalculateMetadataFunction } from 'remotion';
-import type { Project } from '../timeline/project';
+import type { AudioClip, Project } from '../timeline/project';
 import { toFrameCount, toFrameOffset } from '../timeline/time';
 import { validateTransitions } from '../timeline/transition';
 
 export const calculateMetadata: CalculateMetadataFunction<Project> = async ({
   props,
 }) => {
-  const clips = await Promise.all(
-    props.clips.map((clip) =>
-      resolveClipDuration(clip, props.canvas.fps, props.id),
-    ),
+  const fps = props.canvas.fps;
+
+  // Step 1: resolve clip durations from container headers (parallel)
+  const resolvedClips = await Promise.all(
+    props.clips.map((clip) => resolveClipDuration(clip, fps, props.id)),
   );
 
-  validateTransitions(clips, props.canvas.fps, props.id);
-  validateTextAndOverlayRanges(props);
-  const timelineDuration = clips.reduce((max, clip) => {
-    const clipEndFrame =
-      toFrameOffset(clip.startSeconds, props.canvas.fps) +
-      requireClipDuration(clip, props.id);
+  // Step 2: assign sequential startSeconds from actual durations
+  const clips = assignSequentialStartTimes(resolvedClips, fps, props.id);
 
+  validateTransitions(clips, fps, props.id);
+  validateTextAndOverlayRanges(props, clips);
+
+  const clipTimelineDuration = clips.reduce((max, clip) => {
+    const clipEndFrame =
+      toFrameOffset(clip.startSeconds, fps) +
+      requireClipDuration(clip, props.id);
     return Math.max(max, clipEndFrame);
   }, 0);
-  const subtitleTimelineDuration = props.subtitles.reduce((max, subtitle) => {
-    const subtitleEndFrame =
-      toFrameOffset(subtitle.startSeconds, props.canvas.fps) +
-      toFrameCount(subtitle.durationSeconds, props.canvas.fps);
 
-    return Math.max(max, subtitleEndFrame);
-  }, 0);
-  const overlayTimelineDuration = props.overlays.reduce((max, overlay) => {
-    const overlayEndFrame =
-      toFrameOffset(overlay.startSeconds, props.canvas.fps) +
-      toFrameCount(overlay.durationSeconds, props.canvas.fps);
-
-    return Math.max(max, overlayEndFrame);
-  }, 0);
-  const audioTimelineDuration = props.audio.reduce((max, audioClip) => {
-    const audioEndFrame =
-      toFrameOffset(audioClip.startSeconds, props.canvas.fps) +
-      toFrameCount(audioClip.durationSeconds, props.canvas.fps);
-
-    return Math.max(max, audioEndFrame);
-  }, 0);
-  const contentDuration = Math.max(
-    timelineDuration,
-    subtitleTimelineDuration,
-    overlayTimelineDuration,
-    audioTimelineDuration,
-  );
-  const maxDurationInFrames = toFrameCount(
-    props.canvas.durationSeconds,
-    props.canvas.fps,
-  );
-  const durationInFrames = Math.min(maxDurationInFrames, contentDuration);
-
-  if (durationInFrames < 1) {
+  if (clipTimelineDuration < 1) {
     throw new Error(
       `Project ${props.id} resolved to zero duration. Check clip definitions.`,
     );
   }
 
+  // Step 3: resolve audio durations (parallel)
+  const audio = await Promise.all(
+    props.audio.map((track) =>
+      resolveAudioDuration(track, fps, clipTimelineDuration, props.id),
+    ),
+  );
+
+  const audioTimelineDuration = audio.reduce((max, audioClip) => {
+    const audioEndFrame =
+      toFrameOffset(audioClip.startSeconds, fps) +
+      toFrameCount(audioClip.durationSeconds, fps);
+    return Math.max(max, audioEndFrame);
+  }, 0);
+
+  const subtitleTimelineDuration = props.subtitles.reduce((max, subtitle) => {
+    const subtitleEndFrame =
+      toFrameOffset(subtitle.startSeconds, fps) +
+      toFrameCount(subtitle.durationSeconds, fps);
+    return Math.max(max, subtitleEndFrame);
+  }, 0);
+
+  const overlayTimelineDuration = props.overlays.reduce((max, overlay) => {
+    const overlayEndFrame =
+      toFrameOffset(overlay.startSeconds, fps) +
+      toFrameCount(overlay.durationSeconds, fps);
+    return Math.max(max, overlayEndFrame);
+  }, 0);
+
+  const durationInFrames = Math.max(
+    clipTimelineDuration,
+    audioTimelineDuration,
+    subtitleTimelineDuration,
+    overlayTimelineDuration,
+  );
+
   return {
     durationInFrames,
     props: {
       ...props,
+      audio,
       clips,
     },
   };
 };
+
+function assignSequentialStartTimes(
+  clips: Project['clips'],
+  fps: number,
+  projectId: string,
+): Project['clips'] {
+  const assignedClips: Project['clips'] = [];
+  let currentFrame = 0;
+
+  for (const clip of clips) {
+    if (assignedClips.length > 0) {
+      const prev = assignedClips[assignedClips.length - 1];
+      if (prev === undefined) {
+        throw new Error(
+          `Previous clip is missing. project=${projectId}, index=${assignedClips.length}`,
+        );
+      }
+      const prevEndFrame =
+        toFrameOffset(prev.startSeconds, fps) +
+        requireClipDuration(prev, projectId);
+      const transition = clip.transition;
+      const crossfadeFrames =
+        transition?.kind === 'crossfade'
+          ? toFrameCount(transition.durationSeconds, fps)
+          : 0;
+      currentFrame = prevEndFrame - crossfadeFrames;
+    }
+    assignedClips.push({ ...clip, startSeconds: currentFrame / fps });
+  }
+
+  return assignedClips;
+}
 
 async function resolveClipDuration(
   clip: Project['clips'][number],
@@ -76,27 +116,29 @@ async function resolveClipDuration(
   projectId: string,
 ): Promise<Project['clips'][number]> {
   const clipSrc = requireClipSrc(clip, projectId);
-  const { slowDurationInSeconds } = await parseMedia({
+  const { durationInSeconds } = await parseMedia({
     acknowledgeRemotionLicense: true,
     fields: {
-      slowDurationInSeconds: true,
+      durationInSeconds: true,
     },
     src: clipSrc,
   });
 
+  if (durationInSeconds === null) {
+    throw new Error(
+      `Could not read duration from clip container header. project=${projectId}, clip=${clip.id}`,
+    );
+  }
+
   const sourceDurationInFrames = Math.max(
     1,
-    Math.floor(slowDurationInSeconds * fps),
+    Math.floor(durationInSeconds * fps),
   );
   const trimBeforeFrames = toFrameOffset(clip.trimBeforeSeconds ?? 0, fps);
   const trimAfterFrames =
     clip.trimAfterSeconds === undefined
       ? sourceDurationInFrames
       : toFrameOffset(clip.trimAfterSeconds, fps);
-  const boundedTrimAfterFrames = Math.min(
-    trimAfterFrames,
-    sourceDurationInFrames,
-  );
 
   if (trimBeforeFrames < 0) {
     throw new Error(
@@ -104,17 +146,88 @@ async function resolveClipDuration(
     );
   }
 
-  if (boundedTrimAfterFrames <= trimBeforeFrames) {
+  if (
+    clip.trimAfterSeconds !== undefined &&
+    trimAfterFrames > sourceDurationInFrames
+  ) {
     throw new Error(
-      `Clip trim window is invalid. project=${projectId}, clip=${clip.id}, trimBeforeFrames=${trimBeforeFrames}, trimAfterFrames=${boundedTrimAfterFrames}`,
+      `Clip trimAfterSeconds exceeds source duration. project=${projectId}, clip=${clip.id}, trimAfterSeconds=${clip.trimAfterSeconds}, sourceDurationSeconds=${durationInSeconds}`,
+    );
+  }
+
+  if (trimAfterFrames <= trimBeforeFrames) {
+    throw new Error(
+      `Clip trim window is invalid. project=${projectId}, clip=${clip.id}, trimBeforeFrames=${trimBeforeFrames}, trimAfterFrames=${trimAfterFrames}`,
     );
   }
 
   return {
     ...clip,
-    frameCount: boundedTrimAfterFrames - trimBeforeFrames,
+    frameCount: trimAfterFrames - trimBeforeFrames,
     sourceFrameCount: sourceDurationInFrames,
   };
+}
+
+async function resolveAudioDuration(
+  audioClip: Project['audio'][number],
+  fps: number,
+  clipTimelineDuration: number,
+  projectId: string,
+): Promise<AudioClip> {
+  const audioSrc = requireAudioSrc(audioClip, projectId);
+  const { durationInSeconds } = await parseMedia({
+    acknowledgeRemotionLicense: true,
+    fields: {
+      durationInSeconds: true,
+    },
+    src: audioSrc,
+  });
+
+  if (durationInSeconds === null) {
+    throw new Error(
+      `Could not read duration from audio container header. project=${projectId}, audio=${audioClip.id}`,
+    );
+  }
+
+  const trimBefore = audioClip.trimBeforeSeconds;
+
+  if (
+    audioClip.trimAfterSeconds !== undefined &&
+    audioClip.trimAfterSeconds > durationInSeconds
+  ) {
+    throw new Error(
+      `Audio trimAfterSeconds exceeds source duration. project=${projectId}, audio=${audioClip.id}, trimAfterSeconds=${audioClip.trimAfterSeconds}, sourceDurationSeconds=${durationInSeconds}`,
+    );
+  }
+
+  if (
+    audioClip.trimAfterSeconds !== undefined &&
+    audioClip.trimAfterSeconds <= trimBefore
+  ) {
+    throw new Error(
+      `Audio trim window is invalid. project=${projectId}, audio=${audioClip.id}, trimBeforeSeconds=${trimBefore}, trimAfterSeconds=${audioClip.trimAfterSeconds}`,
+    );
+  }
+
+  let effectiveDurationSeconds: number;
+
+  if (audioClip.loop === true && audioClip.trimAfterSeconds === undefined) {
+    // Auto-extend looping track to the end of the clip timeline
+    effectiveDurationSeconds =
+      clipTimelineDuration / fps - audioClip.startSeconds;
+  } else {
+    // trimAfterSeconds is an absolute source timestamp (same semantics as clips)
+    const endSeconds = audioClip.trimAfterSeconds ?? durationInSeconds;
+    effectiveDurationSeconds = endSeconds - trimBefore;
+  }
+
+  if (effectiveDurationSeconds <= 0) {
+    throw new Error(
+      `Audio effective duration must be positive. project=${projectId}, audio=${audioClip.id}`,
+    );
+  }
+
+  return { ...audioClip, durationSeconds: effectiveDurationSeconds };
 }
 
 export function requireClipDuration(
@@ -143,20 +256,38 @@ function requireClipSrc(
   );
 }
 
-function validateTextAndOverlayRanges(project: Project): void {
-  const maxDurationInFrames = toFrameCount(
-    project.canvas.durationSeconds,
-    project.canvas.fps,
+function requireAudioSrc(
+  audioClip: Project['audio'][number],
+  projectId: string,
+): string {
+  if (audioClip.src !== undefined) {
+    return audioClip.src;
+  }
+
+  throw new Error(
+    `Audio source path has not been resolved. project=${projectId}, audio=${audioClip.id}`,
   );
+}
+
+function validateTextAndOverlayRanges(
+  project: Project,
+  clips: Project['clips'],
+): void {
+  const clipTimelineDuration = clips.reduce((max, clip) => {
+    const clipEndFrame =
+      toFrameOffset(clip.startSeconds, project.canvas.fps) +
+      requireClipDuration(clip, project.id);
+    return Math.max(max, clipEndFrame);
+  }, 0);
 
   project.subtitles.forEach((subtitle) => {
     const subtitleEndFrame =
       toFrameOffset(subtitle.startSeconds, project.canvas.fps) +
       toFrameCount(subtitle.durationSeconds, project.canvas.fps);
 
-    if (subtitleEndFrame > maxDurationInFrames) {
+    if (subtitleEndFrame > clipTimelineDuration) {
       throw new Error(
-        `Subtitle exceeds canvas duration. project=${project.id}, subtitle=${subtitle.id}`,
+        `Subtitle exceeds clip timeline duration. project=${project.id}, subtitle=${subtitle.id}`,
       );
     }
   });
@@ -166,9 +297,9 @@ function validateTextAndOverlayRanges(project: Project): void {
       toFrameOffset(overlay.startSeconds, project.canvas.fps) +
       toFrameCount(overlay.durationSeconds, project.canvas.fps);
 
-    if (overlayEndFrame > maxDurationInFrames) {
+    if (overlayEndFrame > clipTimelineDuration) {
       throw new Error(
-        `Overlay exceeds canvas duration. project=${project.id}, overlay=${overlay.id}`,
+        `Overlay exceeds clip timeline duration. project=${project.id}, overlay=${overlay.id}`,
       );
     }
   });

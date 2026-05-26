@@ -7,37 +7,32 @@ import {
 } from '../timeline/project';
 
 export function applyMediaSrc(projectDefinition: ProjectDefinition): Project {
-  const project: Project = {
-    ...projectDefinition,
-    audio: flattenAudioLanes(projectDefinition.audio),
-    clips: projectDefinition.clips,
-  };
+  const flatAudio = flattenAudioLanes(projectDefinition.audio);
 
-  const clips = project.clips.map((clip) => {
-    const publicPath = toAssetPath(project.id, clip.mediaPath);
-
+  const clips = projectDefinition.clips.map((clip) => {
+    const publicPath = toAssetPath(projectDefinition.id, clip.mediaPath);
     return {
       ...clip,
       src: staticFile(publicPath),
+      startSeconds: 0, // assigned sequentially by calculateMetadata
     };
   });
 
-  const audio = project.audio.map((track) => {
-    const publicPath = toAssetPath(project.id, track.mediaPath);
-
+  const audio = flatAudio.map((track) => {
+    const publicPath = toAssetPath(projectDefinition.id, track.mediaPath);
     return {
       ...track,
+      durationSeconds: 0, // resolved by calculateMetadata via parseMedia
       src: staticFile(publicPath),
     };
   });
 
-  const overlays = project.overlays.map((overlay) => {
+  const overlays = projectDefinition.overlays.map((overlay) => {
     if (overlay.kind !== 'image') {
       return overlay;
     }
 
-    const publicPath = toAssetPath(project.id, overlay.mediaPath);
-
+    const publicPath = toAssetPath(projectDefinition.id, overlay.mediaPath);
     return {
       ...overlay,
       src: staticFile(publicPath),
@@ -45,7 +40,7 @@ export function applyMediaSrc(projectDefinition: ProjectDefinition): Project {
   });
 
   return {
-    ...project,
+    ...projectDefinition,
     audio,
     clips,
     overlays,

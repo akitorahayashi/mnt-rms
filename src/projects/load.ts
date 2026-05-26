@@ -129,10 +129,6 @@ function validateCanvas(value: unknown): Project['canvas'] {
   const canvas = requireRecord(value, 'project.canvas');
 
   return {
-    durationSeconds: requirePositiveNumber(
-      canvas.durationSeconds,
-      'project.canvas.durationSeconds',
-    ),
     fps: requirePositiveNumber(canvas.fps, 'project.canvas.fps'),
     height: requirePositiveNumber(canvas.height, 'project.canvas.height'),
     width: requirePositiveNumber(canvas.width, 'project.canvas.width'),
@@ -176,10 +172,7 @@ function validateClip(
       `project.clips[${index}].mediaPath`,
       projectRootPath,
     ),
-    startSeconds: requireNonNegativeNumber(
-      clip.startSeconds,
-      `project.clips[${index}].startSeconds`,
-    ),
+    startSeconds: 0, // assigned sequentially by calculateMetadata
     transition: requireOptionalTransition(
       clip.transition,
       `project.clips[${index}].transition`,
@@ -436,20 +429,17 @@ function validateAudioClip(
   const audio = requireRecord(value, fieldPrefix);
 
   return {
-    durationSeconds: requirePositiveNumber(
-      audio.durationSeconds,
-      `${fieldPrefix}.durationSeconds`,
-    ),
-    startSeconds: requireNonNegativeNumber(
-      audio.startSeconds,
-      `${fieldPrefix}.startSeconds`,
-    ),
+    durationSeconds: 0, // resolved by calculateMetadata via parseMedia
     id: requireNonEmptyString(audio.id, `${fieldPrefix}.id`),
     loop: requireOptionalBoolean(audio.loop, `${fieldPrefix}.loop`),
     mediaPath: requireProjectRelativePath(
       audio.mediaPath,
       `${fieldPrefix}.mediaPath`,
       projectRootPath,
+    ),
+    startSeconds: requireNonNegativeNumber(
+      audio.startSeconds,
+      `${fieldPrefix}.startSeconds`,
     ),
     trimAfterSeconds: requireOptionalNonNegativeNumber(
       audio.trimAfterSeconds,

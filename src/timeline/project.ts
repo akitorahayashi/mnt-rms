@@ -47,7 +47,7 @@ export interface AudioClip {
   volume: number;
 }
 
-export type AuthoredAudioClip = Omit<AudioClip, 'src'>;
+export type AuthoredAudioClip = Omit<AudioClip, 'durationSeconds' | 'src'>;
 
 export interface AudioLanes {
   effects: AuthoredAudioClip[];
@@ -56,7 +56,7 @@ export interface AudioLanes {
 }
 
 export function flattenAudioLanes(audio: AudioLanes): AudioClip[] {
-  return audioLaneOrder.flatMap((laneName) => audio[laneName]);
+  return audioLaneOrder.flatMap((laneName) => audio[laneName]) as AudioClip[];
 }
 
 export type Overlay =
@@ -104,14 +104,13 @@ export interface Clip {
 
 export type AuthoredClip = Omit<
   Clip,
-  'frameCount' | 'sourceFrameCount' | 'src'
+  'frameCount' | 'sourceFrameCount' | 'src' | 'startSeconds'
 >;
 
 export interface ProjectDefinition extends Record<string, unknown> {
   audio: AudioLanes;
   backgroundColor: string;
   canvas: {
-    durationSeconds: number;
     fps: number;
     height: number;
     width: number;
@@ -128,7 +127,6 @@ export interface Project extends Record<string, unknown> {
   audio: AudioClip[];
   backgroundColor: string;
   canvas: {
-    durationSeconds: number;
     fps: number;
     height: number;
     width: number;
