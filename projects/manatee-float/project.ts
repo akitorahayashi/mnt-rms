@@ -1,18 +1,22 @@
-import type { Project } from '../../src/timeline/project';
+import type { ProjectDefinition } from '../../src/timeline/project';
 
-const project: Project = {
-  audio: [
-    {
-      durationSeconds: 30,
-      id: 'main-bgm',
-      loop: true,
-      mediaPath: 'media/music/おならエンジン.mp3',
-      startSeconds: 0,
-      trimAfterSeconds: 90,
-      trimBeforeSeconds: 60,
-      volume: 0.28,
-    },
-  ],
+const project: ProjectDefinition = {
+  audio: {
+    effects: [],
+    music: [
+      {
+        durationSeconds: 30,
+        id: 'main-bgm',
+        loop: true,
+        mediaPath: 'media/music/おならエンジン.mp3',
+        startSeconds: 0,
+        trimAfterSeconds: 90,
+        trimBeforeSeconds: 60,
+        volume: 0.28,
+      },
+    ],
+    narration: [],
+  },
   backgroundColor: '#020403',
   canvas: {
     durationSeconds: 30,
