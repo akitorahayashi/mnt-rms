@@ -26,7 +26,8 @@ await writeFile(
 const studioProcess = Bun.spawn(
   [
     'bun',
-    path.join('node_modules', '.bin', 'remotion'),
+    'x',
+    'remotion',
     'studio',
     path.resolve(import.meta.dir, '../src/composition/root.tsx'),
     '--public-dir',

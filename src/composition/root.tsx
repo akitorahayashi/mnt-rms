@@ -38,8 +38,10 @@ function Root() {
 
 registerRoot(Root);
 
-function requireProject(project: Partial<Project>): Project {
+function requireProject(project: Partial<Project> | null | undefined): Project {
   if (
+    project === null ||
+    project === undefined ||
     typeof project.id !== 'string' ||
     project.canvas === undefined ||
     !Array.isArray(project.clips) ||
