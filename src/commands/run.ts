@@ -1,9 +1,14 @@
 import path from 'node:path';
+import { bundle } from '@remotion/bundler';
+import {
+  getCompositions,
+  renderMedia,
+  selectComposition,
+} from '@remotion/renderer';
 import { loadProject } from '../projects/load';
 import { stageProjectAssets } from '../projects/stage';
-import { writeRootEntry } from './write-root-entry';
 
-export type VideoCommandAction = 'compositions' | 'render' | 'studio';
+export type VideoCommandAction = 'compositions' | 'render';
 
 export interface VideoCommand {
   action: VideoCommandAction;
@@ -13,67 +18,40 @@ export interface VideoCommand {
 export async function runVideoCommand(command: VideoCommand): Promise<void> {
   const loadedProject = await loadProject(command.projectPath);
   const stagedAssets = await stageProjectAssets(loadedProject);
-  const remotionRootEntry = await writeRootEntry({
-    projectFilePath: loadedProject.filePath,
-    projectId: loadedProject.definition.id,
+  const inputProps = loadedProject.definition;
+  const serveUrl = await bundle({
+    entryPoint: path.resolve(import.meta.dir, '../composition/root.tsx'),
+    publicDir: path.resolve(stagedAssets.publicDirPath),
+    rootDir: process.cwd(),
   });
-  const remotionProcess = Bun.spawn(
-    remotionArgs({
-      action: command.action,
-      compositionId: loadedProject.definition.id,
-      outputPath: stagedAssets.outputPath,
-      publicDirPath: stagedAssets.publicDirPath,
-      rootEntryPath: remotionRootEntry,
-    }),
-    {
-      stderr: 'inherit',
-      stdout: 'inherit',
-    },
-  );
 
-  process.exitCode = await remotionProcess.exited;
-}
-
-interface RemotionArgsInput {
-  action: VideoCommandAction;
-  compositionId: string;
-  outputPath: string;
-  publicDirPath: string;
-  rootEntryPath: string;
-}
-
-function remotionArgs(input: RemotionArgsInput): string[] {
-  const executable = path.join('node_modules', '.bin', 'remotion');
-
-  if (input.action === 'compositions') {
-    return [
-      executable,
-      'compositions',
-      input.rootEntryPath,
-      '--public-dir',
-      input.publicDirPath,
-    ];
+  if (command.action === 'compositions') {
+    const compositions = await getCompositions(serveUrl, { inputProps });
+    process.stdout.write(
+      compositions
+        .map(
+          (composition) =>
+            `${composition.id} ${composition.width}x${composition.height} ${composition.fps}fps ${composition.durationInFrames}f`,
+        )
+        .join('\n'),
+    );
+    process.stdout.write('\n');
+    return;
   }
 
-  if (input.action === 'studio') {
-    return [
-      executable,
-      'studio',
-      input.rootEntryPath,
-      '--public-dir',
-      input.publicDirPath,
-    ];
-  }
+  const composition = await selectComposition({
+    serveUrl,
+    id: loadedProject.definition.id,
+    inputProps,
+    timeoutInMilliseconds: 120000,
+  });
 
-  return [
-    executable,
-    'render',
-    input.rootEntryPath,
-    input.compositionId,
-    input.outputPath,
-    '--public-dir',
-    input.publicDirPath,
-    '--timeout',
-    '120000', // 2 minutes
-  ];
+  await renderMedia({
+    codec: 'h264',
+    composition,
+    inputProps,
+    outputLocation: stagedAssets.outputPath,
+    serveUrl,
+    timeoutInMilliseconds: 120000,
+  });
 }

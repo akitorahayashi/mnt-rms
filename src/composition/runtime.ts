@@ -1,38 +1,30 @@
 import { staticFile } from 'remotion';
 import { toAssetPath } from '../projects/asset-path';
-import {
-  flattenAudioLanes,
-  type Project,
-  type ProjectDefinition,
-} from '../timeline/project';
+import type { Project } from '../timeline/project';
 
-export function applyMediaSrc(projectDefinition: ProjectDefinition): Project {
-  const flatAudio = flattenAudioLanes(projectDefinition.audio);
-
-  const clips = projectDefinition.clips.map((clip) => {
-    const publicPath = toAssetPath(projectDefinition.id, clip.mediaPath);
+export function applyMediaSrc(project: Project): Project {
+  const clips = project.clips.map((clip) => {
+    const publicPath = toAssetPath(project.id, clip.mediaPath);
     return {
       ...clip,
       src: staticFile(publicPath),
-      startSeconds: 0, // assigned sequentially by calculateMetadata
     };
   });
 
-  const audio = flatAudio.map((track) => {
-    const publicPath = toAssetPath(projectDefinition.id, track.mediaPath);
+  const audio = project.audio.map((track) => {
+    const publicPath = toAssetPath(project.id, track.mediaPath);
     return {
       ...track,
-      durationSeconds: 0, // resolved by calculateMetadata via parseMedia
       src: staticFile(publicPath),
     };
   });
 
-  const overlays = projectDefinition.overlays.map((overlay) => {
+  const overlays = project.overlays.map((overlay) => {
     if (overlay.kind !== 'image') {
       return overlay;
     }
 
-    const publicPath = toAssetPath(projectDefinition.id, overlay.mediaPath);
+    const publicPath = toAssetPath(project.id, overlay.mediaPath);
     return {
       ...overlay,
       src: staticFile(publicPath),
@@ -40,7 +32,7 @@ export function applyMediaSrc(projectDefinition: ProjectDefinition): Project {
   });
 
   return {
-    ...projectDefinition,
+    ...project,
     audio,
     clips,
     overlays,
