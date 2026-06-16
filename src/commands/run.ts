@@ -39,19 +39,35 @@ export async function runVideoCommand(command: VideoCommand): Promise<void> {
     return;
   }
 
-  const composition = await selectComposition({
-    serveUrl,
-    id: loadedProject.definition.id,
-    inputProps,
-    timeoutInMilliseconds: 120000,
-  });
+  if (command.action === 'render') {
+    const composition = await selectComposition({
+      serveUrl,
+      id: loadedProject.definition.id,
+      inputProps,
+      timeoutInMilliseconds: 120000,
+    });
 
-  await renderMedia({
-    codec: 'h264',
-    composition,
-    inputProps,
-    outputLocation: stagedAssets.outputPath,
-    serveUrl,
-    timeoutInMilliseconds: 120000,
-  });
+    let lastPercent = -1;
+    await renderMedia({
+      codec: 'h264',
+      composition,
+      inputProps,
+      onProgress: ({ progress }) => {
+        const percent = Math.round(progress * 100);
+        if (percent === lastPercent) {
+          return;
+        }
+
+        lastPercent = percent;
+        process.stdout.write(`Rendering progress: ${percent}%\r`);
+      },
+      outputLocation: stagedAssets.outputPath,
+      serveUrl,
+      timeoutInMilliseconds: 120000,
+    });
+    process.stdout.write('\n');
+    return;
+  }
+
+  throw new Error(`Unsupported action: ${command.action satisfies never}`);
 }

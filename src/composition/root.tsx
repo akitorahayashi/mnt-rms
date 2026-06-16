@@ -12,15 +12,15 @@ import { applyMediaSrc } from './runtime';
 const calculateRuntimeMetadata: CalculateMetadataFunction<Project> = (input) =>
   calculateMetadata({
     ...input,
-    props: applyMediaSrc(input.props),
+    props: applyMediaSrc(requireProject(input.props)),
   });
 
 function RuntimeComposition(project: Project) {
-  return <ProjectComposition {...applyMediaSrc(project)} />;
+  return <ProjectComposition {...applyMediaSrc(requireProject(project))} />;
 }
 
 function Root() {
-  const project = getInputProps<Project>();
+  const project = requireProject(getInputProps<Partial<Project>>());
 
   return (
     <RemotionComposition
@@ -37,3 +37,19 @@ function Root() {
 }
 
 registerRoot(Root);
+
+function requireProject(project: Partial<Project>): Project {
+  if (
+    typeof project.id !== 'string' ||
+    project.canvas === undefined ||
+    !Array.isArray(project.clips) ||
+    !Array.isArray(project.audio) ||
+    !Array.isArray(project.overlays)
+  ) {
+    throw new Error(
+      'Remotion input props must include a validated project. Use the mnt-rms command runner to render this composition.',
+    );
+  }
+
+  return project as Project;
+}
