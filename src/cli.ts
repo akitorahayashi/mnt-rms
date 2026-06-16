@@ -26,7 +26,7 @@ async function runFromCli(): Promise<void> {
 }
 
 function isVideoCommandAction(value: string): value is VideoCommandAction {
-  return value === 'compositions' || value === 'render' || value === 'studio';
+  return value === 'compositions' || value === 'render';
 }
 
 async function printUsage(): Promise<void> {
@@ -41,7 +41,7 @@ async function printUsage(): Promise<void> {
   process.stdout.write('  bun run rms <action> <project-path>\n');
   process.stdout.write('  bun run rms help\n');
   process.stdout.write('Actions:\n');
-  process.stdout.write('  compositions, studio, render\n');
+  process.stdout.write('  compositions, render\n');
   process.stdout.write(`Project paths:\n${projectList}\n`);
   process.stdout.write('Example:\n');
   process.stdout.write('  bun run rms render projects/manatee-float\n');

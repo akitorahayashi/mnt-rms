@@ -22,6 +22,7 @@ bun install
 ```bash
 bun run help
 bun run rms compositions projects/manatee-float
+bun run studio projects/manatee-float
 bun run rms render projects/manatee-float
 ```
 
@@ -33,13 +34,14 @@ Render output is written to:
 
 ```bash
 bun run rms <action> <project-path>
+bun run studio <project-path>
 bun run help
 ```
 
 - `action`
   - `compositions`: list available compositions for the project
-  - `studio`: open Remotion Studio for the project
   - `render`: render the project to `output/`
+- `studio`: open Remotion Studio for the project
 - `project-path`
   - project directory containing `project.ts` (for example
     `projects/manatee-float`)
@@ -49,7 +51,7 @@ Common shortcuts:
 
 ```bash
 bun run rms compositions projects/manatee-float
-bun run rms studio projects/manatee-float
+bun run studio projects/manatee-float
 bun run rms render projects/manatee-float
 ```
 

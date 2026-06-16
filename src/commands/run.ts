@@ -1,9 +1,14 @@
 import path from 'node:path';
+import { bundle } from '@remotion/bundler';
+import {
+  getCompositions,
+  renderMedia,
+  selectComposition,
+} from '@remotion/renderer';
 import { loadProject } from '../projects/load';
 import { stageProjectAssets } from '../projects/stage';
-import { writeRootEntry } from './write-root-entry';
 
-export type VideoCommandAction = 'compositions' | 'render' | 'studio';
+export type VideoCommandAction = 'compositions' | 'render';
 
 export interface VideoCommand {
   action: VideoCommandAction;
@@ -13,67 +18,73 @@ export interface VideoCommand {
 export async function runVideoCommand(command: VideoCommand): Promise<void> {
   const loadedProject = await loadProject(command.projectPath);
   const stagedAssets = await stageProjectAssets(loadedProject);
-  const remotionRootEntry = await writeRootEntry({
-    projectFilePath: loadedProject.filePath,
-    projectId: loadedProject.definition.id,
-  });
-  const remotionProcess = Bun.spawn(
-    remotionArgs({
-      action: command.action,
-      compositionId: loadedProject.definition.id,
-      outputPath: stagedAssets.outputPath,
+  const inputProps = loadedProject.definition;
+  const entryPoint = path.resolve(import.meta.dir, '../composition/root.tsx');
+
+  if (command.action === 'compositions') {
+    const serveUrl = await bundleRuntime({
+      entryPoint,
       publicDirPath: stagedAssets.publicDirPath,
-      rootEntryPath: remotionRootEntry,
-    }),
-    {
-      stderr: 'inherit',
-      stdout: 'inherit',
-    },
-  );
+    });
+    const compositions = await getCompositions(serveUrl, { inputProps });
+    process.stdout.write(
+      compositions
+        .map(
+          (composition) =>
+            `${composition.id} ${composition.width}x${composition.height} ${composition.fps}fps ${composition.durationInFrames}f`,
+        )
+        .join('\n'),
+    );
+    process.stdout.write('\n');
+    return;
+  }
 
-  process.exitCode = await remotionProcess.exited;
+  if (command.action === 'render') {
+    const serveUrl = await bundleRuntime({
+      entryPoint,
+      publicDirPath: stagedAssets.publicDirPath,
+    });
+    const composition = await selectComposition({
+      serveUrl,
+      id: loadedProject.definition.id,
+      inputProps,
+      timeoutInMilliseconds: 120000,
+    });
+
+    let lastPercent = -1;
+    await renderMedia({
+      codec: 'h264',
+      composition,
+      inputProps,
+      onProgress: ({ progress }) => {
+        const percent = Math.round(progress * 100);
+        if (percent === lastPercent) {
+          return;
+        }
+
+        lastPercent = percent;
+        process.stdout.write(`Rendering progress: ${percent}%\r`);
+      },
+      outputLocation: stagedAssets.outputPath,
+      serveUrl,
+      timeoutInMilliseconds: 120000,
+    });
+    process.stdout.write('\n');
+    return;
+  }
+
+  throw new Error(`Unsupported action: ${command.action satisfies never}`);
 }
 
-interface RemotionArgsInput {
-  action: VideoCommandAction;
-  compositionId: string;
-  outputPath: string;
+interface BundleRuntimeInput {
+  entryPoint: string;
   publicDirPath: string;
-  rootEntryPath: string;
 }
 
-function remotionArgs(input: RemotionArgsInput): string[] {
-  const executable = path.join('node_modules', '.bin', 'remotion');
-
-  if (input.action === 'compositions') {
-    return [
-      executable,
-      'compositions',
-      input.rootEntryPath,
-      '--public-dir',
-      input.publicDirPath,
-    ];
-  }
-
-  if (input.action === 'studio') {
-    return [
-      executable,
-      'studio',
-      input.rootEntryPath,
-      '--public-dir',
-      input.publicDirPath,
-    ];
-  }
-
-  return [
-    executable,
-    'render',
-    input.rootEntryPath,
-    input.compositionId,
-    input.outputPath,
-    '--public-dir',
-    input.publicDirPath,
-    '--timeout',
-    '120000', // 2 minutes
-  ];
+function bundleRuntime(input: BundleRuntimeInput): Promise<string> {
+  return bundle({
+    entryPoint: input.entryPoint,
+    publicDir: path.resolve(input.publicDirPath),
+    rootDir: process.cwd(),
+  });
 }
