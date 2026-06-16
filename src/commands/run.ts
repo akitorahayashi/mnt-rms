@@ -19,13 +19,13 @@ export async function runVideoCommand(command: VideoCommand): Promise<void> {
   const loadedProject = await loadProject(command.projectPath);
   const stagedAssets = await stageProjectAssets(loadedProject);
   const inputProps = loadedProject.definition;
-  const serveUrl = await bundle({
-    entryPoint: path.resolve(import.meta.dir, '../composition/root.tsx'),
-    publicDir: path.resolve(stagedAssets.publicDirPath),
-    rootDir: process.cwd(),
-  });
+  const entryPoint = path.resolve(import.meta.dir, '../composition/root.tsx');
 
   if (command.action === 'compositions') {
+    const serveUrl = await bundleRuntime({
+      entryPoint,
+      publicDirPath: stagedAssets.publicDirPath,
+    });
     const compositions = await getCompositions(serveUrl, { inputProps });
     process.stdout.write(
       compositions
@@ -40,6 +40,10 @@ export async function runVideoCommand(command: VideoCommand): Promise<void> {
   }
 
   if (command.action === 'render') {
+    const serveUrl = await bundleRuntime({
+      entryPoint,
+      publicDirPath: stagedAssets.publicDirPath,
+    });
     const composition = await selectComposition({
       serveUrl,
       id: loadedProject.definition.id,
@@ -70,4 +74,17 @@ export async function runVideoCommand(command: VideoCommand): Promise<void> {
   }
 
   throw new Error(`Unsupported action: ${command.action satisfies never}`);
+}
+
+interface BundleRuntimeInput {
+  entryPoint: string;
+  publicDirPath: string;
+}
+
+function bundleRuntime(input: BundleRuntimeInput): Promise<string> {
+  return bundle({
+    entryPoint: input.entryPoint,
+    publicDir: path.resolve(input.publicDirPath),
+    rootDir: process.cwd(),
+  });
 }

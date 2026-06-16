@@ -9,24 +9,28 @@
   "scripts": {
     "help": "bun src/cli.ts help",
     "rms": "bun src/cli.ts",
+    "studio": "bun scripts/studio.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "check": "biome check . && bun run typecheck",
     "fix": "biome check --write .",
     "prepare": "husky"
   },
-  "devDependencies": {
-    "@biomejs/biome": "2.4.15",
+  "dependencies": {
     "@remotion/bundler": "4.0.454",
     "@remotion/media-parser": "4.0.454",
     "@remotion/renderer": "4.0.454",
-    "@types/react": "19.2.7",
-    "@types/react-dom": "19.2.3",
-    "@types/bun": "1.3.14",
-    "husky": "9.1.7",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "remotion": "4.0.454",
+    "remotion": "4.0.454"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.15",
+    "@remotion/cli": "4.0.454",
+    "@types/bun": "1.3.14",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "husky": "9.1.7",
     "typescript": "6.0.3"
   }
 }
