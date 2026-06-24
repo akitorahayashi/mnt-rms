@@ -1,54 +1,29 @@
-import { runVideoCommand, type VideoCommandAction } from './commands/run';
-import { listProjectDirectories } from './projects/list';
+#!/usr/bin/env bun
 
-async function runFromCli(): Promise<void> {
-  const [action, projectPath] = Bun.argv.slice(2);
+import { Builtins, Cli } from 'clipanion';
+import packageMetadata from '../package.json';
+import { CompositionsCommand } from './commands/compositions';
+import { RenderCommand } from './commands/render';
 
-  if (action === undefined || action === 'help') {
-    await printUsage();
-    return;
-  }
-
-  if (!isVideoCommandAction(action)) {
-    throw new Error(`Unknown action: ${action}`);
-  }
-
-  if (projectPath === undefined) {
-    throw new Error(
-      'Missing <project-path> argument. Run `bun run rms help` for usage.',
-    );
-  }
-
-  await runVideoCommand({
-    action,
-    projectPath,
+function createCli(): Cli {
+  const cli = new Cli({
+    binaryLabel: packageMetadata.description,
+    binaryName: packageMetadata.name,
+    binaryVersion: packageMetadata.version,
   });
+  cli.register(Builtins.HelpCommand);
+  cli.register(Builtins.VersionCommand);
+  cli.register(CompositionsCommand);
+  cli.register(RenderCommand);
+  return cli;
 }
 
-function isVideoCommandAction(value: string): value is VideoCommandAction {
-  return value === 'compositions' || value === 'render';
+export function runCommandLine(
+  args: readonly string[] = Bun.argv.slice(2),
+): Promise<number> {
+  return createCli().run(args.length === 0 ? ['--help'] : [...args]);
 }
 
-async function printUsage(): Promise<void> {
-  const projectDirectories = await listProjectDirectories();
-  const projectList =
-    projectDirectories.length === 0
-      ? '  (none)'
-      : projectDirectories.map((project) => `  ${project}`).join('\n');
-
-  process.stdout.write('mnt-rms: Remotion rendering CLI\n');
-  process.stdout.write('Usage:\n');
-  process.stdout.write('  bun run rms <action> <project-path>\n');
-  process.stdout.write('  bun run rms help\n');
-  process.stdout.write('Actions:\n');
-  process.stdout.write('  compositions, render\n');
-  process.stdout.write(`Project paths:\n${projectList}\n`);
-  process.stdout.write('Example:\n');
-  process.stdout.write('  bun run rms render projects/manatee-float\n');
+if (import.meta.main) {
+  process.exitCode = await runCommandLine();
 }
-
-runFromCli().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error);
-  process.stderr.write(`${message}\n`);
-  process.exitCode = 1;
-});

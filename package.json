@@ -20,6 +20,7 @@
     "@remotion/bundler": "4.0.454",
     "@remotion/media-parser": "4.0.454",
     "@remotion/renderer": "4.0.454",
+    "clipanion": "^4.0.0-rc.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "remotion": "4.0.454"
