@@ -2,9 +2,6 @@
 
 ## Scope
 
-`bun-spt` is a Bun and TypeScript template repository for script-oriented
-projects.
-
 The repository owns:
 
 - the CLI entrypoint in `src/`

@@ -28,8 +28,9 @@
 
 ## Architecture & Implementation Details
 
-### CLI Command Routing
-`src/cli.ts` parses `<action> <project-path>` and dispatches only `compositions | render` to `runVideoCommand`.
+### CLI
+`src/cli.ts` creates the clipanion `Cli` instance, registers `CompositionsCommand` and `RenderCommand`, and exports `runCommandLine()`. Each command is a `Command` subclass in `src/commands/`; each accepts `<project-path>` and delegates to `runVideoCommand` in `src/commands/run.ts`.
+
 
 ### Project Loading and Contract Validation
 `src/projects/load.ts` resolves directory/file inputs to `project.ts`, imports it, and validates to `Project` (`src/timeline/project.ts`) with explicit path, catalog, and numeric checks.
@@ -40,9 +41,3 @@
 ### Timeline and Composition Pipeline
 `src/timeline/time.ts` and `src/timeline/transition.ts` implement frame conversion and transition invariants. `src/composition/metadata.ts` resolves clip durations and final metadata. `src/composition/render.tsx` renders clips, captions, and audio from resolved props.
 
-## Development Commands
-- Fix: `bun run fix`
-- Check: `bun run check`
-- Test: `bun run test`
-- Run: `bun run rms <action> <project-path>`
-- Studio: `bun run studio <project-path>`
